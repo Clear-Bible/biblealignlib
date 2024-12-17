@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "biblealignlib"
-version = "0.1.0"
+version = "0.1.1"
 description = "Code for managing Word-level alignments for Bibles, including both automatic alignments and manually corrected alignments."
 authors = ["Sean Boisen <sean.boisen@biblica.com>"]
 license = "MIT"
@@ -28,7 +28,7 @@ jupyterlab = "^4.3.3"
 biblelib = "^0.3.17"
 pandas = "^2.2.3"
 regex = "^2024.11.6"
-eflomal = {url = "https://github.com/jacobwegner/eflomal/archive/9a2f4a789b4abdaf5b572aa98766efeb13c65ba8.zip", optional = true}
+# eflomal = {url = "https://github.com/jacobwegner/eflomal/archive/9a2f4a789b4abdaf5b572aa98766efeb13c65ba8.zip", optional = true}
 
 
 [tool.poetry.group.dev.dependencies]
