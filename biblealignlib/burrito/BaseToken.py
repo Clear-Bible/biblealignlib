@@ -1,6 +1,7 @@
 """Base class for Source and Target."""
 
 from dataclasses import dataclass
+import re
 
 from biblelib.word import bcvwpid
 
@@ -20,6 +21,7 @@ class BaseToken:
     aligned: bool = False
     # variant text if this text occurs multiple times in a verse
     text_unique: str = ""
+    _truthyre = re.compile("(?i)(y|true)$")
 
     def __repr__(self) -> str:
         """Return a printed representation."""
@@ -60,6 +62,10 @@ class BaseToken:
     def isempty(self) -> bool:
         """True if token.text is the empty string: that's not normal."""
         return self.text == ""
+
+    def _truthy_asbool(self, value: bool | str) -> bool:
+        """Return a bool for truthy values."""
+        return bool(self._truthyre.match(value))
 
 
 def asbool(value: bool | str) -> str:

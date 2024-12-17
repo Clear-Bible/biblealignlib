@@ -66,6 +66,7 @@ def mrk_4_9_4() -> Source:
         "lemma": "οὖς",
         "pos": "noun",
         "morph": "n- -apn-",
+        "required": True,
     }
     return Source.fromjsondict(mrk_4_9_4_dict)
 
@@ -82,6 +83,7 @@ def gen_1_1_1() -> Source:
         "lemma": "",
         "pos": "noun",
         "morph": "",
+        # required: default is True
     }
     return Source.fromjsondict(gen_1_1_1_dict)
 
@@ -100,6 +102,7 @@ def serialized() -> dict[str, str]:
         "lemma": "οὖς",
         "pos": "noun",
         "morph": "n- -apn-",
+        "required": "y",
     }
 
 
@@ -113,6 +116,7 @@ class TestSource:
         # assert gen_1_1_1.altId[:-2] == gen_1_1_1.text
         assert gen_1_1_1.text == "רֵאשִׁית"
         assert gen_1_1_1.maculaid == "o010010010012"
+        assert gen_1_1_1.is_content
 
     def test_init(self, mrk_4_9_4: Source) -> None:
         """Test initialization."""
@@ -121,6 +125,7 @@ class TestSource:
         assert mrk_4_9_4.altId[:-2] == mrk_4_9_4.text
         assert mrk_4_9_4.maculaid == "n41004009005"
         assert mrk_4_9_4.tokenid == "41004009005"
+        assert mrk_4_9_4.is_content
 
     def test_idtext(self, mrk_4_9_4: Source) -> None:
         """Text idtext property."""
@@ -128,6 +133,8 @@ class TestSource:
             "41004009005",
             "ὦτα",
         )
+
+    # should add tests for is_content == False
 
     # this happens intentionally for Hebrew? So dropping this check
     # and its test for now
@@ -159,6 +166,7 @@ class TestSource:
             "lemma": "οὖς",
             "pos": "noun",
             "morph": "n- -apn-",
+            "required": True,
         }
         with pytest.raises(AssertionError):
             Source(**bad)
@@ -193,6 +201,7 @@ class TestSource:
             "lemma": "οὖς",
             "pos": "noun",
             "morph": "n- -apn-",
+            "required": True,
         }
 
     def test_asdict_omittext(self, mrk_4_9_4: Source) -> None:
@@ -207,36 +216,7 @@ class TestSource:
             "lemma": "οὖς",
             "pos": "noun",
             "morph": "n- -apn-",
-        }
-
-    def test_asdict_essential(self, mrk_4_9_4: Source) -> None:
-        """Test asdict()."""
-        assert mrk_4_9_4.asdict(essential=True) == {
-            "id": "n41004009005",
-            "altId": "ὦτα-1",
-            "text": "ὦτα",
-            "strongs": "G3775",
-            "gloss": "ears",
-            "gloss2": "ears",
-            "lemma": "οὖς",
-            "pos": "noun",
-            "morph": "n- -apn-",
-            "exclude": False,
-        }
-
-    def test_asdict_omittext_essential(self, mrk_4_9_4: Source) -> None:
-        """Test asdict()."""
-        assert mrk_4_9_4.asdict(omittext=True, essential=True) == {
-            "id": "n41004009005",
-            "altId": "--",
-            "text": "--",
-            "strongs": "G3775",
-            "gloss": "ears",
-            "gloss2": "ears",
-            "lemma": "οὖς",
-            "pos": "noun",
-            "morph": "n- -apn-",
-            "exclude": False,
+            "required": True,
         }
 
     def test_deserialized(self, serialized: dict[str, str]) -> None:
@@ -253,6 +233,7 @@ class TestSource:
             "lemma": "οὖς",
             "pos": "noun",
             "morph": "n- -apn-",
+            "required": True,
         }
 
 
@@ -287,13 +268,15 @@ class TestSourceReader:
         ]
         # lemma doesn't match surface text
         assert [token.id for token in self.sr.term_tokens("βλαστάνω")] == []
-        assert [token.id for token in self.sr.term_tokens("Οἶδας")] == [
-            "40015012007",
-            "55001015001",
-        ]
+        assert [token.id for token in self.sr.term_tokens("Οἶδας")] == ["40015012007", "55001015001"]
         assert len([token.id for token in self.sr.term_tokens("οἶδας")]) == 15
         # more if disregarding case
         assert len([token.id for token in self.sr.term_tokens("Οἶδας", lowercase=True)]) == 17
+
+    def test_book_token_counts(self) -> None:
+        """Test book_token_counts()."""
+        bc = self.sr.book_token_counts()
+        assert bc["41"] == 11286
 
 
 class TestOTSourceReader:

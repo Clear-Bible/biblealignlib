@@ -2,13 +2,20 @@
 
 from biblealignlib import ROOT, DATAPATH, SRCPATH
 
-from .AlignmentGroup import Document, Metadata, AlignmentReference, AlignmentRecord, AlignmentGroup
+from .AlignmentGroup import (
+    Document,
+    Metadata,
+    AlignmentReference,
+    AlignmentRecord,
+    AlignmentGroup,
+    TopLevelGroups,
+)
 
 from .AlignmentSet import AlignmentSet
 
 # probably don't need the other types
 from .AlignmentType import TranslationType
-from .alignments import AlignmentsReader
+from .alignments import AlignmentsReader, write_alignment_group
 from .manager import Manager, VerseData
 from .BaseToken import BaseToken, asbool, bare_id
 from .source import macula_prefixer, macula_unprefixer, Source, SourceReader
@@ -25,6 +32,7 @@ __all__ = [
     "AlignmentReference",
     "AlignmentRecord",
     "AlignmentGroup",
+    "TopLevelGroups",
     # AlignmentSet
     "AlignmentSet",
     # AlignmentType
@@ -35,6 +43,7 @@ __all__ = [
     "bare_id",
     # alignments
     "AlignmentsReader",
+    "write_alignment_group",
     # manager
     "Manager",
     "VerseData",
@@ -47,4 +56,6 @@ __all__ = [
     "Target",
     "TargetReader",
     "TargetWriter",
+    # util
+    "groupby_bcv",
 ]

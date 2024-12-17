@@ -8,16 +8,23 @@ the data already exists in Scripture Burrito format. Alignment sets
 are identified by a language (code), target and source IDs, and a path to the data.
 
 >>> from biblealignlib.burrito import DATAPATH, Manager, AlignmentSet
-# your local copy of e.g. Hindi data
->>> targetlang = "hin"
->>> alset = AlignmentSet(targetlanguage=targetlang, targetid="IRVHin", sourceid="SBLGNT", langdatapath=(DATAPATH / targetlang))
+# your local copy of alignments-eng/data
+>>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
+>>> LANGDATAPATH = (DATAPATH.parent.parent / f"alignments-{targetlang}/data")
+>>> alset = AlignmentSet(targetlanguage=targetlang,
+        targetid=targetid,
+        sourceid="SBLGNT",
+        langdatapath=LANGDATAPATH)
 >>> mgr = Manager(alset)
 >>> mgr["40001024"]
 <VerseData: 40001024>
 
+# To upgrade older alignments to the latest sandard, see
+# src.check.Upgrader.write_alignment_group()
+
 """
 
-from collections import UserDict
+from collections import defaultdict, UserDict
 from typing import Optional
 
 from .AlignmentGroup import AlignmentGroup, AlignmentRecord
@@ -45,6 +52,7 @@ class Manager(UserDict):
     def __init__(
         self,
         alignmentset: AlignmentSet,
+            # this probably doesn't belong here
         creator: str = "GrapeCity",
         keeptargetwordpart: bool = False,
         # if True, don't remove bad records
@@ -60,19 +68,9 @@ class Manager(UserDict):
         super().__init__()
         self.keeptargetwordpart: bool = keeptargetwordpart
         self.keepbadrecords: bool = keepbadrecords
-        # # bad records when processing JSON: set in _make_record
-        # self.badrecords: Optional[dict[str, BadRecord]] = {}
-        # set in _clean_alignmentrecords
-        self.badrecords: Optional[dict[str, BadRecord]] = {}
         # the configuration of alignment data
         self.alignmentset: AlignmentSet = alignmentset
         print(self.alignmentset.displaystr)
-        # refactored code: leave bad record checking here, since that
-        # also needs source/target TSVs
-        alreader: AlignmentsReader = AlignmentsReader(
-            alignmentset=self.alignmentset, keeptargetwordpart=self.keeptargetwordpart
-        )
-        self.alignmentgroup: AlignmentGroup = alreader.read_alignments()
         # keys are token identifiers from source/manuscript data
         self.sourceitems: SourceReader = self.read_sources()
         self.targetitems: TargetReader = self.read_targets()
@@ -86,86 +84,30 @@ class Manager(UserDict):
                 list(self.targetitems.values()), bcvfn=lambda t: t.source_verse
             ),
         }
-        # The individual AlignmentRecords for convenience: you'll
-        # often want them by BCV though
-        alrecdict: dict[str, AlignmentRecord] = {
-            arec.meta.id: arec for arec in self.alignmentgroup.records
-        }
-        # drop badrecords: this means
-        # alignmentrecords will be smaller than
-        # alignmentgroup.records, but will omit some bad data.
-        self.alignmentrecords = self._clean_alignmentrecords(alrecdict)
-        if self.badrecords:
-            # update alignmentgroup with the right set of records
-            self.alignmentgroup.records = list(self.alignmentrecords.values())
-        # group sources/targets by verse: they're not all included in alignments
-        # group alignment records by bcv
-        self.bcv["records"]: dict[str, list[AlignmentRecord]] = groupby_bcv(
-            list(self.alignmentrecords.values()), lambda r: r.source_bcv
+        # The cleaned AlignmentRecords are in the alignmentgroup
+        # self.alignmentsreader = self.get_alignmentsreader(self.alignmentset)
+        # used in multiple fns under _clean_alignmentrecord
+        self.alignmentsreader: AlignmentsReader = AlignmentsReader(
+            alignmentset=alignmentset,
+            keeptargetwordpart=self.keeptargetwordpart,
+            keepbadrecords=self.keepbadrecords,
+        )
+        self.alignmentsreader.clean_alignments(self.sourceitems, self.targetitems)
+        # group records by BCV
+        self.bcv["records"]: dict[str, AlignmentRecord] = groupby_bcv(
+            list(self.alignmentsreader.alignmentgroup.records), lambda r: r.source_bcv
         )
         # and make VerseData instances
-        self.bcv["versedata"] = {
+        self.data = self.bcv["versedata"] = {
             bcvid: self.make_versedata(bcvid, self.bcv["records"]) for bcvid in self.bcv["records"]
         }
-        self.data = self.bcv["versedata"]
         self.check_integrity()
 
-    def _bad_reason(self, arec: AlignmentRecord) -> Optional[BadRecord]:
-        """Return a reason instance if the alignment record is malformed, or ''.
+    def __repr__(self) -> None:
+        """Return a printed representation."""
+        return f"<{self.__class__.__name__} with {len(self)} keys>"
 
-        Optionally add a tuple of supporting data.
-        """
-        # internally, we don't use macula prefixes (only on output)
-        arecdict = arec.asdict(withmaculaprefix=False)
-        badrecdict = {"identifier": arec.identifier, "record": arec}
-        # these labels must match what's in BadRecord._reasons
-        if not arecdict["source"]:
-            return BadRecord(**badrecdict, reason=Reason.NOSOURCE)
-        elif "" in arecdict["source"]:
-            return BadRecord(**badrecdict, reason=Reason.EMPTYSOURCE)
-        elif not (arecdict["target"]):
-            return BadRecord(**badrecdict, reason=Reason.NOTARGET)
-        elif "" in arecdict["target"]:
-            return BadRecord(**badrecdict, reason=Reason.EMPTYTARGET)
-        elif any([(tok not in self.sourceitems) for tok in arecdict["source"]]):
-            missing = [tok for tok in arecdict["source"] if tok not in self.sourceitems]
-            return BadRecord(**badrecdict, reason=Reason.MISSINGSOURCE, data=missing)
-        elif any([(tok not in self.targetitems) for tok in arecdict["target"]]):
-            missing = [tok for tok in arecdict["target"] if tok not in self.targetitems]
-            if set(arecdict["target"]).symmetric_difference(set(missing)):
-                return BadRecord(**badrecdict, reason=Reason.MISSINGTARGETSOME, data=missing)
-            else:
-                return BadRecord(**badrecdict, reason=Reason.MISSINGTARGETALL, data=missing)
-        else:
-            return None
-
-    def _clean_alignmentrecords(
-        self, alrecdict: dict[str, AlignmentRecord]
-    ) -> dict[str, AlignmentRecord]:
-        """Find bad alignment records, return good ones."""
-        self.badrecords: Optional[dict[str, BadRecord]] = {
-            recid: badrec
-            for recid, arec in alrecdict.items()
-            if (badrec := self._bad_reason(arec))
-            if badrec
-        }
-        if self.badrecords:
-            keepmsg = "Keeping" if self.keepbadrecords else "Dropping"
-            print(
-                f"{keepmsg} {len(self.badrecords)} bad alignment records. Instances in self.badrecords."
-            )
-            for reason in Reason:
-                rcount = len([mal for mal in self.badrecords.values() if mal.reason == reason])
-                if rcount:
-                    print(f"{reason.value}\t{rcount}")
-        # drop them from alignmentrecords, unless keeping them
-        if self.keepbadrecords:
-            return alrecdict
-        else:
-            return {
-                recid: badrec for recid, badrec in alrecdict.items() if recid not in self.badrecords
-            }
-
+        
     def read_sources(self) -> SourceReader:
         """Read source data into SourceReader."""
         return SourceReader(self.alignmentset.sourcepath)

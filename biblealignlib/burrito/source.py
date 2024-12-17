@@ -39,6 +39,7 @@ n41004003001: Ἀκούετε		 (Listen, ἀκούω, verb)
 
 from collections import UserDict
 from dataclasses import dataclass
+from itertools import groupby
 from pathlib import Path
 import re
 from typing import Any, Iterable
@@ -50,7 +51,7 @@ from unicodecsv import DictReader, DictWriter
 from biblelib.word import bcvwpid
 
 # should eventually come from Clearlib
-from biblealignlib import normalize_strongs
+from biblealignlib import normalize_strongs, get_canonid
 from .BaseToken import BaseToken
 
 PREFIXRE = re.compile(r"^[no]")
@@ -105,6 +106,8 @@ class Source(BaseToken):
     pos: str = ""
     # coded morphological information: need to document the format
     morph: str = ""
+    # if True, this token should be aligned: otherwise it's optional
+    required: bool = True
     _output_fields: tuple = (
         ("id", "id"),
         ("altId", "altId"),
@@ -115,6 +118,7 @@ class Source(BaseToken):
         ("lemma", "lemma"),
         ("pos", "pos"),
         ("morph", "morph"),
+        ("required", "required"),
     )
     _input_fields: tuple = tuple(dict(_output_fields).keys())
     # # TODO: enumerate and validate part of speech values
@@ -159,6 +163,8 @@ class Source(BaseToken):
                 self.strong = normalize_strongs(self.strong, prefix=prefix)
             except ValueError:
                 warn(f"Failed to normalize Strong's '{self.strong}' in {self.id}")
+        # not required if not content
+        self.required = self.is_content
         # ensure valid values: wrong for Hebrew
         # if not self.text:
         #     raise ValueError(f"Empty text for {self.id}")
@@ -166,6 +172,7 @@ class Source(BaseToken):
         # if not str.isalpha(self.text):
         #     raise ValueError(f"Non-alphabetic text {repr(self.text)} for {self.id}")
 
+    @property
     def is_content(self) -> bool:
         """Return True if part of speech indicates content.
 
@@ -212,7 +219,13 @@ class Source(BaseToken):
         # filter our LRR markers
         newdict["altId"] = newdict["altId"].replace(chr(8206), "")
         newdict["text"] = newdict["text"].replace(chr(8206), "")
-        return Source(**newdict)
+        # warn if a value is supplied when reading that disagrees
+        sourceinst = Source(**newdict)
+        # warn if you're overwriting a value read from file
+        if "required" in newdict and newdict["required"] != sourceinst.required:
+            warn(f"Overwriting 'required' value {sourceinst.required} for {sourceinst.id}")
+            sourceinst.required = newdict["required"]
+        return sourceinst
 
     @property
     def _display(self) -> str:
@@ -234,7 +247,7 @@ class Source(BaseToken):
         redisstributed.
 
         With essential = True (default is False), add an 'exclude' key
-        which is True if not is_content().
+        which is True if not is_content.
 
         """
         fdict = dict(self._output_fields)
@@ -246,7 +259,8 @@ class Source(BaseToken):
             outdict["altId"] = "--"
             outdict["text"] = "--"
         if essential:
-            outdict["exclude"] = not self.is_content()
+            raise NotImplementedError("The essential parameter has been deprecated.")
+            # outdict["exclude"] = not self.is_content
         return outdict
 
 
@@ -262,6 +276,7 @@ class SourceReader(UserDict):
     """
 
     inmap = {v: k for k, v in Source._output_fields}
+    canon: str = ""
 
     def __init__(self, tsvpath: Path, idheader: str = "id") -> None:
         """Initialize a Reader instance."""
@@ -283,6 +298,8 @@ class SourceReader(UserDict):
                 srctoken = Source(**deserialized)
                 # drop prefixes, store under the token ID (not the Macula ID)
                 self.data[srctoken.tokenid] = srctoken
+        # this assumes data is from a single canon: if that's not true, :-<
+        self.canon = get_canonid(list(self.data.keys())[0])
 
     def vocabulary(self, tokenattr: str = "text", lower: bool = False) -> list[str]:
         """Return the sorted set of attribute values for tokens.
@@ -309,8 +326,10 @@ class SourceReader(UserDict):
             writer.writeheader()
             for sourceinst in self.values():
                 srcdict: dict = sourceinst.asdict(essential=essential)
-                # normalize to not include canon prefix or part ID
-                srcdict["id"] = bcvwpid.BCVWPID(srcdict["id"]).get_id(prefix=True, part_index=False)
+                # normalize to not include canon prefix or part ID for GNT
+                srcdict["id"] = bcvwpid.BCVWPID(srcdict["id"]).get_id(
+                    prefix=True, part_index=(self.canon == "ot")
+                )
                 writer.writerow(srcdict)
 
     def term_tokens(
@@ -345,7 +364,7 @@ class SourceReader(UserDict):
                 counttypestr = f"{toktypestr}.{counttype.capitalize()}"
                 print(f"{counttypestr}\t{counts[counttype]}")
                 contentinstances = [
-                    getattr(tok, toktype) for tok in self.values() if tok.is_content()
+                    getattr(tok, toktype) for tok in self.values() if tok.is_content
                 ]
                 contentcounts = {
                     "instance": len(contentinstances),
@@ -359,3 +378,100 @@ class SourceReader(UserDict):
                     ]
                     poscounts = {"instance": len(posinstances), "type": len(set(posinstances))}
                     print(f"{posstr}\t{poscounts[counttype]}")
+
+    @staticmethod
+    def _to_bid(bcvwpid: str) -> str:
+        """Return the book id for a BCV string."""
+        return bcvwpid.BCVWPID(bcvwpid).to_bid
+
+    def _book_tokens(
+        self, tokenattr: str = "text", lower: bool = False, is_content: bool = False
+    ) -> dict[str, list[Source]]:
+        """Return a list of tokens grouped by book.
+
+        The attribute used is 'text' by default: 'lemma' is another
+        useful value.
+
+        With lower = True (default is False), lower-case values. This
+        only affects downstream type counts.
+
+        With is_content = True (default is False), only count content
+        terms.
+
+        """
+
+        def tokenattrfn(tok: Source) -> str:
+            return getattr(tok, tokenattr).lower() if lower else getattr(tok, tokenattr)
+
+        def to_bid(src: Source) -> str:
+            """Return a two-char book ID."""
+            return src.to_bcv()[:2]
+
+        book_tokens: dict[str, list[Source]] = {
+            k: list(g) for k, g in groupby(self.values(), to_bid)
+        }
+        if is_content:
+            book_tokens = {
+                bookid: [tok for tok in tokens if tok.is_content]
+                for bookid, tokens in book_tokens.items()
+            }
+        book_attr_tokens = {
+            bookid: tokenattrs
+            for bookid, tokens in book_tokens.items()
+            if (tokenattrs := [tokenattrfn(tok) for tok in tokens])
+        }
+        return book_attr_tokens
+
+    def book_token_counts(self, lower: bool = False, is_content: bool = False) -> dict[str, str]:
+        """Return a count of source tokens for each book."""
+        book_tokens = self._book_tokens(lower=lower, is_content=is_content)
+        return {bookid: len(tokens) for bookid, tokens in book_tokens.items()}
+
+    def book_type_counts(
+        self, tokenattr: str = "text", lower: bool = False, is_content: bool = False
+    ) -> dict[str, str]:
+        """Return a count of source token types (vocabulary) for each book.
+
+        The attribute used is 'text' by default: 'lemma' is another
+        useful value.
+
+        With lower = True (default is False), lower-case values.
+
+        With is_content = True (default is False), only count content
+        terms.
+
+        """
+
+        # def tokenattrfn(tok: Source) -> str:
+        #     return getattr(tok, tokenattr).lower() if lower else getattr(tok, tokenattr)
+
+        # def to_bid(src: Source) -> str:
+        #     """Return a two-char book ID."""
+        #     return src.to_bcv()[:2]
+
+        # book_tokens: dict[str, list[Source]] = {
+        #     k: list(g) for k, g in groupby(self.values(), to_bid)
+        # }
+        # if is_content:
+        #     book_tokens = {
+        #         bookid: [tok for tok in tokens if tok.is_content]
+        #         for bookid, tokens in book_tokens.items()
+        #     }
+        book_tokens = self._book_tokens(tokenattr=tokenattr, lower=lower, is_content=is_content)
+        book_type_counts = {
+            bookid: len(set(tokenattrs)) for bookid, tokenattrs in book_tokens.items()
+        }
+        return book_type_counts
+
+    # def vocabulary(self, tokenattr: str = "text", lower: bool = False) -> list[str]:
+    #     """Return the sorted set of attribute values for tokens.
+
+    #     The attribute used is 'text' by default: 'lemma' is another useful value.
+
+    #     With lower = True (default is False), lower-case values.
+    #     """
+    #     if lower:
+    #         vocab = {getattr(stok, tokenattr).lower() for stok in self.values()}
+    #     else:
+    #         vocab = {getattr(stok, tokenattr) for stok in self.values()}
+    #     return sorted(vocab)

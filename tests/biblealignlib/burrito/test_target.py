@@ -20,7 +20,8 @@ def mrk_4_9_6() -> Target:
         "skip_space_after": False,
         "altId": "He-1",
         "text": "He",
-        "exclude": True,
+        "exclude": False,
+        "required": True,
         "transType": "m",
         "isPunc": False,
         "isPrimary": False,
@@ -59,28 +60,28 @@ class TestTarget:
         assert mrk_4_9_6.asdict(omitfalse=True, omittext=True) == {
             "id": "41004009006",
             "text": "--",
-            "exclude": "y",
+            "exclude": "",
             "skip_space_after": "",
             "source_verse": "41004009",
         }
         assert mrk_4_9_6.asdict(omitfalse=True, omittext=False) == {
             "id": "41004009006",
             "text": "He",
-            "exclude": "y",
+            "exclude": "",
             "skip_space_after": "",
             "source_verse": "41004009",
         }
         assert mrk_4_9_6.asdict(omitfalse=False, omittext=True) == {
             "id": "41004009006",
             "text": "--",
-            "exclude": "y",
+            "exclude": "n",
             "skip_space_after": "n",
             "source_verse": "41004009",
         }
         assert mrk_4_9_6.asdict(omitfalse=False, omittext=False) == {
             "id": "41004009006",
             "text": "He",
-            "exclude": "y",
+            "exclude": "n",
             "skip_space_after": "n",
             "source_verse": "41004009",
         }
@@ -140,3 +141,16 @@ class TestTargetReader:
         assert [token.id for token in self.tr.term_tokens("Crowd")] == []
         assert len([token.id for token in self.tr.term_tokens("crowd")]) == 115
         assert len([token.id for token in self.tr.term_tokens("crowd", lowercase=True)]) == 115
+
+    def test_same_source_verse(self) -> None:
+        """Check self.same_source_verse property."""
+        tok = self.tr["41004003001"]
+        assert tok.same_source_verse is True
+        # Acts 19:41 in BSB is part of verse 40 in SBLGNT
+        tok = self.tr["44019041001"]
+        assert tok.same_source_verse is False
+        # check the whole mapping: ensure target Acts 19:41 is in
+        # source BCVs for Acts 19:40
+        source_bcvs = self.tr.get_source_bcvs()
+        assert self.tr["44019040001"] in source_bcvs["44019040"]
+        assert "44019041" not in source_bcvs

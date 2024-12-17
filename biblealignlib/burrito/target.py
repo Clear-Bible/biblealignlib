@@ -12,15 +12,11 @@
 >>> tr["410040090111"].asdict()
 {'identifier': '410040090111', 'altId': 'hear-1', 'text': 'hear', 'transType': '', 'isPunc': 'False', 'isPrimary': 'True'}
 
-# Make a new NT target corpus file for Russian from vline data
->>> tw = target.TargetWriter(DATAPATH / "vline/rus/nt_RUSSYN.txt", "nt", "RUSSYN")
->>> len(tw)
-160474
-# now write it out
->>> tw.write_tsv(TARGETS / "rus/RUSSYN.tsv")
+# write the tokens out
+>>> tr.write_tsv(tokenlist=tr.data.values(), outpath=(LANGDATAPATH / "targets/BSB/new-nt_BSB.tsv"))
 """
 
-from collections import UserDict
+from collections import UserDict, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -28,6 +24,7 @@ from typing import Any, Callable, Optional
 from warnings import warn
 
 from unicodecsv import DictReader, DictWriter
+import regex
 
 from biblelib.word import bcvwpid
 
@@ -47,6 +44,9 @@ class Target(BaseToken):
     skip_space_after: bool = False
     # if True, this token should not be eligible for alignment
     exclude: bool = False
+    # if True, this token should be aligned: otherwise it's optional
+    # add to _input_fields once supported
+    required: bool = True
     # ?
     transType: str = ""
     # is this token punctuation?
@@ -57,7 +57,7 @@ class Target(BaseToken):
     isPrimary: bool = False
     # optional. id of the associated mss token, used in BSB to more easily generate alignment data
     msId: str = ""
-    _boolean_fields: tuple = ("skip_space_after", "exclude", "isPunc", "isPrimary")
+    _boolean_fields: tuple = ("skip_space_after", "exclude", "required", "isPunc", "isPrimary")
     _input_fields: tuple = (
         ("id", "id"),
         ("altId", "altId"),
@@ -79,6 +79,7 @@ class Target(BaseToken):
         "skip_space_after",
         "exclude",
     )
+    _punctre = regex.compile(r"\p{P}")
     # dataclass rules means __hash__ isn't inherited otherwise
     __hash__ = BaseToken.__hash__
 
@@ -88,12 +89,11 @@ class Target(BaseToken):
         if not self.source_verse:
             self.source_verse = self.bcv
             # self.source_verse = bcvwpid.to_bcv(self.id)
-        truthyre = re.compile("(?i)(y|true)$")
         # booleanize if a string
         for field in self._boolean_fields:
             fieldval = getattr(self, field)
             if isinstance(fieldval, str):
-                setattr(self, field, bool(truthyre.match(fieldval)))
+                setattr(self, field, self._truthy_asbool(fieldval))
 
     @staticmethod
     def fromjsondict(jdict: dict[str, Any]) -> "Target":
@@ -124,6 +124,11 @@ class Target(BaseToken):
     def _display(self) -> str:
         """Return a displayable string for key data."""
         return f"{self.id}: {self.text}\t\t ({self.transType!r}, {self.isPunc}, {self.isPrimary})"
+
+    @property
+    def ispunc_token(self) -> bool:
+        """Return True if all characters are punctuation."""
+        return bool(self._punctre.fullmatch(self.text))
 
     def display(self) -> None:
         """Print a readable display of the key data."""
@@ -172,13 +177,20 @@ class TargetReader(UserDict):
     inmap = {v: k for k, v in Target._input_fields}
 
     def __init__(
-        self, tsvpath: Path, idheader: str = "id", keepwordpart: bool = False, strict: bool = False
+        self,
+        tsvpath: Path,
+        idheader: str = "id",
+        keepwordpart: bool = False,
+        detect_punc: bool = False,
+        strict: bool = False,
     ) -> None:
         """Initialize a Reader instance.
 
         With keepwordpart (default is False), keep the part/subword
         index when creating a token id. Current convention is to never
         keep word parts for target texts.
+
+        With detect_punc (default is False), guess punctuation when reading. Only knows about Latin
 
         """
         super().__init__()
@@ -192,7 +204,7 @@ class TargetReader(UserDict):
         with self.tsvpath.open("rb") as f:
             reader = DictReader(f, delimiter="\t")
             for row in reader:
-                assert idheader in row, f"Missing ID header '{idheader}'"
+                assert idheader in row, f"TargetReader: missing ID header '{idheader}'"
                 # adjust name of id column if a different header
                 if idheader != "id":
                     idrow = {("id" if k == idheader else k): v for k, v in row.items()}
@@ -209,7 +221,10 @@ class TargetReader(UserDict):
                 deserialized = {self.inmap[k]: v for k, v in idrow.items() if k in self.inmap}
                 if identifier in self:
                     warn(f"{identifier} is duplicated in {self.tsvpath}")
-                self.data[identifier] = Target(**deserialized)
+                token = Target(**deserialized)
+                if detect_punc:
+                    token.isPunc = token.ispunc_token
+                self.data[identifier] = token
                 # check for empty tokens
                 if self.data[identifier].isempty:
                     if strict:
@@ -220,8 +235,16 @@ class TargetReader(UserDict):
                 f"{self.identifier} has {len(self.badtokens)} target tokens with empty text: see self.badtokens."
             )
 
+    def add_isPunc(self) -> None:
+        """Detect punctuation for all tokens."""
+        for tok in self.values():
+            tok.isPunc = tok.ispunc_token
+
+    # maybe need an option here to map isPunc to exclude? But that's
+    # really kathairo's job.
+    @staticmethod
     def write_tsv(
-        self,
+        tokenlist: list[Target],
         outpath: Path,
         excludefn: Optional[Callable] = None,
         fields: tuple[str] = (
@@ -232,7 +255,7 @@ class TargetReader(UserDict):
             "exclude",
         ),
     ) -> None:
-        """Write Targets as TSV.
+        """Write a list of Targets as TSV.
 
         This outputs according to the most recent standard, but it does _not_
         correct data errors (e.g. it does not decide if characters are
@@ -251,11 +274,12 @@ class TargetReader(UserDict):
         if excludefn:
             if "exclude" not in fields:
                 fields = fields + ("exclude",)
+        outpath.parent.mkdir(parents=True, exist_ok=True)
         with outpath.open("wb") as f:
             writer = DictWriter(f, fieldnames=fields, delimiter="\t")
             writer.writeheader()
-            for targetinst in self.values():
-                trgdict = targetinst.asdict()
+            for targetinst in tokenlist:
+                trgdict = targetinst.asdict(fields=fields)
                 # normalize to not include canon prefix or part ID
                 trgdict["id"] = bcvwpid.BCVWPID(trgdict["id"]).get_id(
                     prefix=False, part_index=False
@@ -288,3 +312,17 @@ class TargetReader(UserDict):
             if (casedtokenattr := tokattr.lower() if lowercase else tokattr)
             if casedtokenattr == casedterm
         ]
+
+    def get_source_bcvs(self) -> dict[str, list[Target]]:
+        """Return a mapping from source BCVs to the corresponding target tokens.
+
+        Sometimes translations use different versification or
+        word-level verse references compared to sources (for BSB, see
+        Acts 19:41: these eleven tokens are all part of Acts 19:40 in
+        the SBLGNT).
+
+        """
+        source_bcvs = defaultdict(list)
+        for trg in self.data.values():
+            source_bcvs[trg.source_verse].append(trg)
+        return source_bcvs

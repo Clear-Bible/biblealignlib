@@ -37,68 +37,67 @@ class TestManager:
         assert mgr.alignmentset.targetid == "BSB"
         assert mgr.sourceitems["41004003001"].lemma == "ἀκούω"
         assert mgr.targetitems["41004003002"].text == "Listen"
-        # output format, so includes macula prefix
-        assert mgr.alignmentrecords["41004003.001"].asdict()["source"] == [
-            "n41004003001",
-            "n41004003002",
-        ]
-        assert mgr.alignmentrecords["41004003.001"].meta.id == "41004003.001"
-        assert mgr.alignmentrecords["41004003.001"].identifier == "41004003.001"
-        vd43: VerseData = mgr["41004003"]
-        assert vd43.alignments[0][0][0].lemma == "ἀκούω"
-        assert vd43.get_texts() == [
-            "“",
-            "Listen",
-            "!",
-            "A",
-            "farmer",
-            "went",
-            "out",
-            "to",
-            "sow",
-            "his",
+
+    def test_versedata(self, mgr: Manager) -> None:
+        """Test VerseData."""
+        vd44: VerseData = mgr["41004004"]
+        assert vd44.alignments[0][0][0].lemma == "καί"
+        assert vd44.targets_included[0].text == "And"
+        assert vd44.get_texts(unique=True) == [
+            "And",
+            "as",
+            "he",
+            "was",
+            "sowing",
+            "some",
             "seed",
-            ".",
+            "fell",
+            "along",
+            "the",
+            "path",
+            "and",
+            "the.1",
+            "birds",
+            "came",
+            "and.1",
+            "devoured",
+            "it",
         ]
-        # happens to be the same
-        assert vd43.get_texts(unique=True) == [
-            "“",
-            "Listen",
-            "!",
-            "A",
-            "farmer",
-            "went",
-            "out",
-            "to",
-            "sow",
-            "his",
-            "seed",
-            ".",
-        ]
-        assert vd43.get_texts(typeattr="sources") == [
-            "Ἀκούετε",
-            "ἰδοὺ",
-            "ἐξῆλθεν",
-            "ὁ",
-            "σπείρων",
-            "σπεῖραι",
+        assert vd44.get_texts(typeattr="sources") == [
+            "καὶ",
+            "ἐγένετο",
+            "ἐν",
+            "τῷ",
+            "σπείρειν",
+            "ὃ",
+            "μὲν",
+            "ἔπεσεν",
+            "παρὰ",
+            "τὴν",
+            "ὁδόν",
+            "καὶ",
+            "ἦλθεν",
+            "τὰ",
+            "πετεινὰ",
+            "καὶ",
+            "κατέφαγεν",
+            "αὐτό",
         ]
 
 
-# needs fixing
-# class TestWLCMManager:
-#     alset = AlignmentSet(
-#         sourceid="WLCM", targetid="BSB", targetlanguage="eng", langdatapath=ENGLANGDATAPATH
-#     )
-#     manager = Manager(alset)
+class TestWLCMManager:
+    alset = AlignmentSet(
+        sourceid="WLCM", targetid="BSB", targetlanguage="eng", langdatapath=ENGLANGDATAPATH
+    )
+    manager = Manager(alset)
 
-#     def test_init(self) -> None:
-#         """Test reading WLCM."""
-#         # target scheme should be downgraded
-#         # refactored
-#         # assert self.manager.targetdoc.scheme == "BCVW"
-#         assert self.alset.sourceid == "WLCM"
-#         assert self.alset.targetid == "BSB"
+    def test_init(self) -> None:
+        """Test reading WLCM."""
+        # target scheme should be downgraded
+        # refactored
+        # assert self.manager.targetdoc.scheme == "BCVW"
+        assert self.alset.sourceid == "WLCM"
+        assert self.alset.targetid == "BSB"
 
 
 # Should add tests for Reason/BadRecord

@@ -9,6 +9,9 @@ from .AlignmentGroup import AlignmentRecord
 class Reason(Enum):
     """Enumerate constants for bad alignment records."""
 
+    ALIGNEDEXCLUDE = "An excluded token is aligned"
+    DUPLICATESOURCE = "Source selector is included in multiple records"
+    DUPLICATETARGET = "Target selector is included in multiple records"
     EMPTYSOURCE = "Empty string in source selectors"
     EMPTYTARGET = "Empty string in target selectors"
     MISSINGSOURCE = "Token reference is missing from self.sourceitems"
@@ -40,17 +43,28 @@ class BadRecord:
         basestr += ">"
         return basestr
 
-    def display(self) -> None:
-        """Print a readable string."""
-        if self.reason in (Reason.MISSINGTARGETALL, Reason.MISSINGTARGETSOME):
-            print(
-                f"{self.identifier}: {self.reason.name}. Sources: {self.record.source_selectors}, Missing targets: {self.data}"
-            )
-        elif self.reason in (Reason.MISSINGSOURCE):
-            print(
-                f"{self.identifier}: {self.reason.name}. Missing sources: {self.data}, targets: {self.record.target_selectors}"
-            )
+    @property
+    def display(self) -> str:
+        """Return a readable string."""
+        basestr = f"{self.identifier!r}: {self.reason.name}."
+        if self.reason == (Reason.ALIGNEDEXCLUDE):
+            basestr += f" Targets: {self.record.target_selectors}"
+        elif self.reason in (Reason.DUPLICATESOURCE, Reason.DUPLICATETARGET):
+            basestr += f" Duplicates: {self.data}"
+        elif self.reason in (
+            Reason.EMPTYSOURCE,
+            Reason.EMPTYTARGET,
+            Reason.NOSOURCE,
+            Reason.NOTARGET,
+        ):
+            basestr += f" {self.data}"
+        elif self.reason in (Reason.MISSINGTARGETALL, Reason.MISSINGTARGETSOME):
+            basestr += f" Sources: {self.record.source_selectors}, Missing targets: {self.data}"
+        elif self.reason == Reason.MISSINGSOURCE:
+            basestr += f" Missing sources: {self.data}, targets: {self.record.target_selectors}"
         else:
-            print(
-                f"{self.identifier}: {self.reason.name}. Sources: {self.record.source_selectors}, targets: {self.record.target_selectors}"
+            # UNKNOWN
+            basestr += (
+                f"Sources: {self.record.source_selectors}, targets: {self.record.target_selectors}"
             )
+        return basestr

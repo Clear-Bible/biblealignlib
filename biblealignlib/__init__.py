@@ -2,6 +2,7 @@
 
 from enum import Enum
 from pathlib import Path
+import re
 
 from .strongs import normalize_strongs
 
@@ -10,12 +11,24 @@ ROOT = Path(__file__).parent
 DATAPATH = ROOT / "data"
 SRCPATH = ROOT / "src"
 
+GRAPECITYDIR = ROOT.parent / "grapecity-alignments"
+# for output
+ALIGNMENTSROOT = ROOT.parent / "Alignments"
 
 CANONIDS = {
     "nt",
     "ot",
     # meaning the entire 66 book corpus
     "protestant",
+}
+
+
+VERSIFICATIONIDS: set[str] = {
+    "eng",
+    "org",
+    "rso",
+    # not yet implemented
+    # "ethiopian_custom", "lxx", "rsc", "vul"
 }
 
 
@@ -49,6 +62,25 @@ class SourceidEnum(str, Enum):
         except ValueError:
             # unrecognized source
             return "X"
+
+
+def get_canonid(bcv: str) -> str:
+    """Return nt/ot for a BCVish string.
+
+    Simple string matching on the book portion of an identifier, so
+    works for books, chapters, verses and full BCVWPID identifiers.
+
+    """
+    otcanonre = re.compile(r"^[0-3][0-9]")
+    ntcanonre = re.compile(r"^[4-6][0-9]")
+    # don't include 67-69
+    notntcanonre = re.compile(r"^6[7-9]")
+    if otcanonre.match(bcv):
+        return "ot"
+    elif ntcanonre.match(bcv) and not notntcanonre.match(bcv):
+        return "nt"
+    else:
+        raise ValueError(f"Invalid BCVish id value: {bcv}")
 
 
 __all__ = [

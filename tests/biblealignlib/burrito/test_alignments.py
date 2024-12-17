@@ -34,8 +34,9 @@ class TestAlignmentsReader:
         assert alreader.scheme == "BCVWP"
         assert alreader.sourcedoc.docid == "SBLGNT"
         assert alreader.targetdoc.docid == "BSB"
+        assert not alreader.rejected
         algroup = alreader.alignmentgroup
         alrec: dict[str, AlignmentRecord] = {arec.meta.id: arec for arec in algroup.records}
-        assert alrec["41004003.001"].asdict()["source"] == ["n41004003001", "n41004003002"]
+        assert alrec["41004003.001"].asdict()["source"] == ["41004003001", "41004003002"]
         assert alrec["41004003.001"].meta.id == "41004003.001"
         assert alrec["41004003.001"].identifier == "41004003.001"

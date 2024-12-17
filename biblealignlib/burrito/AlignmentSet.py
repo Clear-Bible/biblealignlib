@@ -41,11 +41,14 @@ class AlignmentSet:
     targetid: str
     # an ISO 639-3 code (not a full name)
     targetlanguage: str
+    # use the published source, not internal
     sourcedatapath: Path = ROOT.parent.parent / "Alignments/data/sources"
-    # language-specific data path, like alignments-hin/data
+    # language-specific data path, like alignments-hin/data, or
+    # published in alignments/data/{lang}
     langdatapath: Path = Path()
     # most common default, but override if necessary
     alternateid: str = "manual"
+    reponame: str = ""
     # these are computed in post-init
     sourcepath: Path = Path()
     targetpath: Path = Path()
@@ -59,16 +62,22 @@ class AlignmentSet:
             # only allow ASCII letters, digits, and underscores
             if not re.fullmatch(r"\w+", idstr, flags=re.ASCII):
                 raise ValueError(f"Invalid {idattr}: {idstr}")
+        # make sure source id is recognized
+        _ = SourceidEnum(self.sourceid)
         if self.alternateid and not re.fullmatch(r"\w+", self.alternateid, flags=re.ASCII):
             raise ValueError(f"Invalid alternateid: {self.alternateid}")
         self.sourcepath = self.sourcedatapath / f"{self.sourceid}.tsv"
         self.targetpath = (
             self.langdatapath / f"targets/{self.targetid}/{self.canon}_{self.targetid}.tsv"
         )
+        assert self.targetpath.exists(), f"No such target TSV: {self.targetpath}"
         self.alignmentpath = (
             self.langdatapath / f"alignments/{self.targetid}/{self.identifier}.json"
         )
+        assert self.alignmentpath.exists(), f"No such alignment path: {self.alignmentpath}"
         self.tomlpath = self.langdatapath / f"alignments/{self.targetid}/{self.identifier}.toml"
+        # don't require this for loading data, only for publishing
+        # assert self.tomlpath.exists(), f"No such TOML file: {self.tomlpath}"
 
     def __repr__(self) -> str:
         """Return a printed representation."""
@@ -125,6 +134,25 @@ class AlignmentSet:
         - alignmentpath: {self.alignmentpath}
         - tomlpath: {self.tomlpath}
         """
+
+    # not for Alignments
+    def comparable(self, other: "AlignmentSet") -> bool:
+        """Compare two alignment sets and return True if they can be usefully compared."""
+
+        def compattr(attr) -> bool:
+            selfvalue = getattr(self, attr)
+            othervalue = getattr(other, attr)
+            if selfvalue != othervalue:
+                print(f"Different values for {attr}: {selfvalue} vs {othervalue}")
+                return False
+            else:
+                return True
+
+        assert isinstance(other, AlignmentSet), "Comparison must be to another AlignmentSet."
+        for attr in ["sourceid", "targetlanguage"]:
+            if not compattr(attr):
+                return False
+        return True
 
     def check_files(self) -> bool:
         """Check if files exists."""

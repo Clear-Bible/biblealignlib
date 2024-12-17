@@ -18,6 +18,7 @@ spec that are not supported by this code.
 
 from dataclasses import dataclass, field, fields
 import datetime as dt
+from functools import total_ordering
 from itertools import groupby
 from typing import Any, Optional
 
@@ -173,11 +174,12 @@ class Metadata:
     # no hoist option here: the caller decides
     def asdict(self) -> dict[str, Any]:
         """Return a dict of values for serialization."""
-        metadict = {f: fattr for f in self._fieldnames if (fattr := getattr(self, f))}
+        metadict = {f: fattr for f in sorted(self._fieldnames) if (fattr := getattr(self, f))}
         return metadict
 
 
 @dataclass
+@total_ordering
 class AlignmentRecord:
     """Manage data for an alignment record."""
 
@@ -201,6 +203,14 @@ class AlignmentRecord:
     def __hash__(self) -> int:
         """Return a hash value for the record."""
         return hash(self.identifier)
+
+    def __eq__(self, other):
+        assert isinstance(other, AlignmentRecord), f"Not an AlignmentRecord: {other}"
+        return self.source_selectors[0] == other.source_selectors[0]
+
+    def __lt__(self, other):
+        assert isinstance(other, AlignmentRecord), f"Not an AlignmentRecord: {other}"
+        return self.source_selectors[0] < other.source_selectors[0]
 
     @property
     def identifier(self) -> str:
@@ -247,7 +257,7 @@ class AlignmentRecord:
         return any(ref.incomplete for ref in self.references.values())
 
     def asdict(
-        self, positional: bool = False, withmeta: bool = True, withmaculaprefix: bool = True
+        self, positional: bool = False, withmeta: bool = True, withmaculaprefix: bool = False
     ) -> dict[str, Any]:
         """Return a dict of values suitable for serialization.
 
@@ -286,7 +296,8 @@ class AlignmentRecord:
                     "meta": self.meta.asdict(),
                 }
             )
-        return recdict
+        # sort by keys as Mike prefers
+        return {k: recdict[k] for k in sorted(recdict)}
 
 
 @dataclass
@@ -303,7 +314,7 @@ class AlignmentGroup:
     meta: Metadata
     records: list[AlignmentRecord]
     # keys to AlignmentRecord.references: same order as documents
-    roles: tuple[str, str] = ("source", "targt")
+    roles: tuple[str, str] = ("source", "target")
     # either "ot" or "nt", based on documents.docid
     sourcedocid: str = ""
     canon: str = ""
@@ -359,3 +370,51 @@ class AlignmentGroup:
             k: list(g) for k, g in groupby(self.records, lambda r: r.source_bcv)
         }
         return verserecords
+
+
+# not for Alignments: 2024-09-09
+@dataclass
+class TopLevelGroups:
+    """Manage a pair of AlignmentGroups. Both groups are required."""
+
+    # one group for OT, one group for NT
+    groups: tuple[AlignmentGroup, AlignmentGroup]
+    format: str = "alignment"
+    version: str = "0.3.1"
+    sourcedocids: tuple[str, str] = ()
+    targetdocid: str = ""
+
+    def __post_init__(self) -> None:
+        """Compute values on initialization."""
+        assert len(self.groups) == 2, "There must be two groups."
+        # everything below assumes two groups
+        assert (
+            self.groups[0].roles == self.groups[1].roles
+        ), f"Roles must match: {self.groups[0].roles}, {self.groups[1].roles}"
+        assert (
+            self.groups[0].meta.conformsTo == self.groups[1].meta.conformsTo
+        ), f"meta.conformsto values must match: {self.groups[0].meta.conformsTo}, {self.groups[1].meta.conformsTo}"
+        # target documents should also match
+        targetdocids = list(
+            {group.documents[group.roles.index("target")].docid for group in self.groups}
+        )
+        assert len(targetdocids) == 1, f"OT and NT target docids must match: {targetdocids}"
+        self.targetdocid = targetdocids[0]
+        # canons must be different
+        assert {self.groups[0].canon, self.groups[1].canon} == {
+            "ot",
+            "nt",
+        }, "Both OT and NT canons are required."
+        self.sourcedocids = (self.groups[0].sourcedocid, self.groups[1].sourcedocid)
+
+    def __repr__(self) -> str:
+        """Return a printed representation."""
+        return f"<TopLevelGroups({self.targetdocid}): {self.sourcedocids}>"
+
+    def asdict(self, hoist: bool = True) -> dict[str, Any]:
+        """Return an opionated dict of values suitable for serialization."""
+        return {
+            "format": self.format,
+            "version": self.version,
+            "groups": [self.groups[0].asdict(hoist=hoist), self.groups[1].asdict(hoist=hoist)],
+        }
