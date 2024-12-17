@@ -6,11 +6,11 @@ import re
 
 from .strongs import normalize_strongs
 
-
+# these values are only useful when loading this code directly: their
+# values through pip installation aren't useful
 ROOT = Path(__file__).parent
 DATAPATH = ROOT / "data"
 SRCPATH = ROOT / "src"
-
 GRAPECITYDIR = ROOT.parent / "grapecity-alignments"
 # for output
 ALIGNMENTSROOT = ROOT.parent / "Alignments"

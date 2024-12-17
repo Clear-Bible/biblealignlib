@@ -1,5 +1,7 @@
 """Code for working with alignment data in Scripture Burrito format."""
 
+# these values are only useful when loading this code directly: their
+# values through pip installation aren't useful
 from biblealignlib import ROOT, DATAPATH, SRCPATH
 
 from .AlignmentGroup import (
