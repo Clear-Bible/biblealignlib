@@ -23,3 +23,4 @@ dist/
 # ignore luigi logging
 .ipynb_checkpoints/
 .pytest_cache/
+.env

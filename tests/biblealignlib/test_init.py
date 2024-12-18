@@ -8,6 +8,12 @@ import biblealignlib as src
 class TestSourceidEnum:
     """Test SourceidEnum()."""
 
+    def test_paths(self) -> None:
+        """Ensure important paths exists."""
+        assert src.CLEARROOT.exists()
+        assert src.SOURCES.exists()
+        assert src.CLEARROOT.exists()
+
     def test_SourceidEnum(self) -> None:
         """Test initialization."""
         assert src.SourceidEnum("SBLGNT").value == "SBLGNT"
