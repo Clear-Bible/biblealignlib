@@ -1,13 +1,13 @@
 """Score hypothesized alignments against gold standard data.
 
->>> from biblealignlib.burrito import DATAPATH, AlignmentSet
+>>> from biblealignlib.burrito import CLEARROOT, AlignmentSet
 >>> from biblealignlib.autoalign import scorer
 # your local copy of alignments-eng/data
 >>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
 >>> alsetref = AlignmentSet(targetlanguage=targetlang,
         targetid=targetid,
         sourceid=sourceid,
-        langdatapath=(DATAPATH.parent.parent / f"alignments-{targetlang}/data"))
+        langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
 >>> condition = alsetref.langdatapath.parent / f"exp/{targetid}/20241206eflomal"
 >>> sc = scorer.Scorer(referenceset=alsetref,
     hypothesispath=(condition / "SBLGNT-BSB-eflomal.json"),

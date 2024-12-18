@@ -3,8 +3,8 @@
 >>> from biblealignlib.burrito import target
 # Reading is normally done by Manager
 
->>> from biblealignlib import ROOT
->>> tr = target.TargetReader(ROOT.parent.parent / "alignments-eng/data/targets/BSB/nt_BSB.tsv")
+>>> from biblealignlib import CLEARROOT
+>>> tr = target.TargetReader(CLEARROOT / "alignments-eng/data/targets/BSB/nt_BSB.tsv")
 # length is the number of tokens
 >>> len(tr)
 201087
@@ -13,6 +13,7 @@
 {'identifier': '410040090111', 'altId': 'hear-1', 'text': 'hear', 'transType': '', 'isPunc': 'False', 'isPrimary': 'True'}
 
 # write the tokens out
+>>> LANGDATAPATH = CLEARROOT / "alignments-eng/data"
 >>> tr.write_tsv(tokenlist=tr.data.values(), outpath=(LANGDATAPATH / "targets/BSB/new-nt_BSB.tsv"))
 """
 

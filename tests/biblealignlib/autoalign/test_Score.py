@@ -3,10 +3,10 @@
 import pytest
 
 from biblealignlib.autoalign import Score
-from biblealignlib.burrito import DATAPATH, AlignmentSet, AlignmentsReader
+from biblealignlib.burrito import CLEARROOT, AlignmentSet, AlignmentsReader
 
 # test internal version
-ENGLANGDATAPATH = DATAPATH.parent.parent / "alignments-eng/data"
+ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
 
 
 @pytest.fixture

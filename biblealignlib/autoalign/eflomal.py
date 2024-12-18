@@ -3,13 +3,13 @@
 This assumes you've built eflomal-align, and things are located in
 their conventional places.
 
->>> from biblealignlib.burrito import DATAPATH, AlignmentSet
+>>> from biblealignlib.burrito import CLEARROOT, AlignmentSet
 >>> from biblealignlib.autoalign import eflomal
 >>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
 >>> alsetref = AlignmentSet(targetlanguage=targetlang,
         targetid=targetid,
         sourceid=sourceid,
-        langdatapath=(DATAPATH.parent.parent / f"alignments-{targetlang}/data"))
+        langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
 # set up for output to "test" as experimental condition
 >>> efinst = eflomal.Eflomal(alsetref, "test")
 # create the forward and reverse output
@@ -29,7 +29,7 @@ import subprocess
 
 # import eflomal
 
-from src import DATAPATH, ROOT
+from biblealignlib import CLEARROOT
 
 from biblealignlib.burrito import AlignmentSet
 
@@ -37,10 +37,10 @@ class Eflomal:
     # aligner = eflomal.Aligner()
     aligner = "eflomal-align"
     makepriors = "eflomal-makepriors"
-    # this needs a way to get build in internal-alignments: this path
+    # this needs a way to get built in internal-alignments: this path
     # likely only works for Sean
-    atools = ROOT.parent.parent / "clab/fast_align/build/atools"
-    autodatapath: Path = DATAPATH.parent.parent / "autoalignment/data"
+    atools = CLEARROOT.parent / "clab/fast_align/build/atools"
+    autodatapath: Path = CLEARROOT / "autoalignment/data"
 
     def __init__(self, alignmentset: AlignmentSet, condition: str, inputname: str = "") -> None:
         """Initialize an instance."""

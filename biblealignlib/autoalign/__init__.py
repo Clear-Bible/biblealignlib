@@ -1,5 +1,3 @@
-from biblealignlib import ROOT, DATAPATH, SRCPATH
+from biblealignlib import CLEARROOT, SOURCES
 
-# these values are only useful when loading this code directly: their
-# values through pip installation aren't useful
-__all__ = ["ROOT", "DATAPATH", "SRCPATH"]
+__all__ = ["CLEARROOT", "SOURCES"]

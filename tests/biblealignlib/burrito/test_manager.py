@@ -2,11 +2,11 @@
 
 import pytest
 
-from biblealignlib.burrito import ROOT, AlignmentSet, Manager, VerseData
+from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData
 
 # test published version
 # ENGLANGDATAPATH = DATAPATH / "eng"
-ENGLANGDATAPATH = ROOT.parent.parent / "Alignments/data/eng"
+ENGLANGDATAPATH = CLEARROOT / "Alignments/data/eng"
 
 
 @pytest.fixture

@@ -7,10 +7,10 @@ This assumes you know what alignment set you're looking for, and that
 the data already exists in Scripture Burrito format. Alignment sets
 are identified by a language (code), target and source IDs, and a path to the data.
 
->>> from biblealignlib.burrito import DATAPATH, Manager, AlignmentSet
+>>> from biblealignlib.burrito import CLEARROOT, Manager, AlignmentSet
 # your local copy of alignments-eng/data
 >>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
->>> LANGDATAPATH = (DATAPATH.parent.parent / f"alignments-{targetlang}/data")
+>>> LANGDATAPATH = (CLEARROOT / f"alignments-{targetlang}/data")
 >>> alset = AlignmentSet(targetlanguage=targetlang,
         targetid=targetid,
         sourceid="SBLGNT",

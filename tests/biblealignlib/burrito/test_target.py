@@ -5,10 +5,10 @@ Does not test writing files.
 
 import pytest
 
-from biblealignlib.burrito import ROOT, Target, TargetReader
+from biblealignlib.burrito import CLEARROOT, Target, TargetReader
 
 # test published version
-ENGLANGDATAPATH = ROOT.parent.parent / "alignments-eng/data"
+ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
 
 
 @pytest.fixture

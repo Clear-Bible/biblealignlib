@@ -2,10 +2,10 @@
 
 import pytest
 
-from biblealignlib.burrito import ROOT, AlignmentSet, AlignmentsReader, AlignmentRecord
+from biblealignlib.burrito import CLEARROOT, AlignmentSet, AlignmentsReader, AlignmentRecord
 
 # test internal version
-ENGLANGDATAPATH = ROOT.parent.parent / "alignments-eng/data"
+ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
 
 
 @pytest.fixture

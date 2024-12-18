@@ -2,9 +2,9 @@
 
 This requires setting a number of parameters.
 
->>> from biblealignlib.burrito import AlignmentSet, DATAPATH
+>>> from biblealignlib.burrito import CLEARROOT, AlignmentSet
 # your local copy of alignments-eng/data
->>> ENGLANGDATAPATH = DATAPATH.parent.parent / "alignments-eng/data"
+>>> ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
 >>> asetleb = AlignmentSet(sourceid="SBLGNT", targetid="LEB",
                            targetlanguage="eng", langdatapath=ENGLANGDATAPATH,
                            alternateid="manual")
@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from biblealignlib import ROOT, SourceidEnum
+from biblealignlib import CLEARROOT, SourceidEnum
 
 
 @dataclass
@@ -42,7 +42,7 @@ class AlignmentSet:
     # an ISO 639-3 code (not a full name)
     targetlanguage: str
     # use the published source, not internal
-    sourcedatapath: Path = ROOT.parent.parent / "Alignments/data/sources"
+    sourcedatapath: Path = CLEARROOT / "Alignments/data/sources"
     # language-specific data path, like alignments-hin/data, or
     # published in alignments/data/{lang}
     langdatapath: Path = Path()

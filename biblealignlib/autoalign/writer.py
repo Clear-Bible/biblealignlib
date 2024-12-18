@@ -13,7 +13,7 @@ from pathlib import Path
 
 from biblelib.word import BCVID
 
-from biblealignlib import DATAPATH
+from biblealignlib import CLEARROOT
 from .mapper import PharaohMapper
 
 
@@ -30,7 +30,7 @@ class PharaohWriter:
         """Initialize the PharaohWriter for mapper."""
         self.mapper = mapper
         # encode conventions for output
-        self._outdatapath: Path = DATAPATH.parent.parent / "autoalignment/data"
+        self._outdatapath: Path = CLEARROOT / "autoalignment/data"
         assert self._outdatapath.exists(), f"{self._outdatapath} must exist: need to pull the repo?"
         self.outdatapath = (
             self._outdatapath

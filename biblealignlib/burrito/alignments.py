@@ -2,9 +2,9 @@
 
 This provides support for manager.Manager to read the combination of source, target, and alignment data.
 
->>> from biblealignlib.burrito import DATAPATH, AlignmentSet, alignments
+>>> from biblealignlib.burrito import CLEARROOT, AlignmentSet, alignments
 # your local copy of alignments-eng/data
->>> LANGDATAPATH = DATAPATH.parent.parent / "alignments-eng/data"
+>>> LANGDATAPATH = CLEARROOT / "alignments-eng/data"
 >>> alset = AlignmentSet(targetlanguage="eng", targetid="BSB", sourceid="SBLGNT", langdatapath=LANGDATAPATH)
 >>> alreader = alignments.AlignmentsReader(alset)
 >>> alreader.read_alignments()

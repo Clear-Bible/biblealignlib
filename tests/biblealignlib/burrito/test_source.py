@@ -11,10 +11,8 @@ and some Unicode characters.
 
 import pytest
 
-from biblealignlib import ROOT
+from biblealignlib import SOURCES
 from biblealignlib.burrito import Source, SourceReader, macula_prefixer, macula_unprefixer
-
-SOURCES = ROOT.parent.parent / "Alignments/data/sources"
 
 
 class TestMacula_Prefixer:
@@ -268,7 +266,10 @@ class TestSourceReader:
         ]
         # lemma doesn't match surface text
         assert [token.id for token in self.sr.term_tokens("βλαστάνω")] == []
-        assert [token.id for token in self.sr.term_tokens("Οἶδας")] == ["40015012007", "55001015001"]
+        assert [token.id for token in self.sr.term_tokens("Οἶδας")] == [
+            "40015012007",
+            "55001015001",
+        ]
         assert len([token.id for token in self.sr.term_tokens("οἶδας")]) == 15
         # more if disregarding case
         assert len([token.id for token in self.sr.term_tokens("Οἶδας", lowercase=True)]) == 17

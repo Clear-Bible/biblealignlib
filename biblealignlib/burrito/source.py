@@ -3,11 +3,7 @@
 This supports reading and writing source records. It is normally
 called from burrito.manager.Manager().
 
-# this path computation doesn't work for biblealignlib loaded via pip:
-# the intended value of SOURCES here is
-# {GITROOT}/Alignments/data/sources
->>> from biblealignlib import ROOT
->>> SOURCES = ROOT.parent / "Alignments/data/sources"
+>>> from biblealignlib import SOURCES
 >>> from biblealignlib.burrito import SourceReader
 >>> src = SourceReader(SOURCES / "SBLGNT.tsv")
 # number of tokens

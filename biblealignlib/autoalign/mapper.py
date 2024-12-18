@@ -3,14 +3,14 @@
 This supports mapping to and from pharaoh-format data, which is
 commonly used by automated alignment algorithms.
 
->>> from biblealignlib.burrito import DATAPATH, pharaoh, AlignmentSet
+>>> from biblealignlib.burrito import CLEARROOT, pharaoh, AlignmentSet
 >>> from biblealignlib.autoalign import pharaoh
 # your local copy of alignments-eng/data
 >>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
 >>> alsetref = AlignmentSet(targetlanguage=targetlang,
         targetid=targetid,
         sourceid=sourceid,
-        langdatapath=(DATAPATH.parent.parent / f"alignments-{targetlang}/data"))
+        langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
 >>> pm = pharaoh.PharaohMapper(alsetref)
 >>> len(pm)
 # this many verses have mappings

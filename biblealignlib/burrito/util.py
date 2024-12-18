@@ -4,8 +4,8 @@
 >>> from biblealignlib.burrito import util
 
 # group target tokens by verse
->>> from biblealignlib import ROOT
->>> tr = target.TargetReader(ROOT.parent.parent / "alignments-eng/data/targets/BSB/nt_BSB.tsv")
+>>> from biblealignlib import CLEARROOT
+>>> tr = target.TargetReader(CLEARROOT / "alignments-eng/data/targets/BSB/nt_BSB.tsv")
 >>> vd = util.groupby_bcv(tr.values())
 # tokens for MRK 4:3
 >>> vd["41004003"]

@@ -1,8 +1,7 @@
 """Code for working with alignment data in Scripture Burrito format."""
 
-# these values are only useful when loading this code directly: their
-# values through pip installation aren't useful
-from biblealignlib import ROOT, DATAPATH, SRCPATH
+# where Clear-Bible repos are rooted
+from biblealignlib import CLEARROOT, SOURCES
 
 from .AlignmentGroup import (
     Document,
@@ -25,9 +24,8 @@ from .target import Target, TargetReader
 
 
 __all__ = [
-    "ROOT",
-    "DATAPATH",
-    "SRCPATH",
+    "CLEARROOT",
+    "SOURCES",
     # AlignmentGroup
     "Document",
     "Metadata",

@@ -2,13 +2,11 @@
 
 import pytest
 
-from biblealignlib import ROOT
+from biblealignlib import CLEARROOT, SOURCES
 from biblealignlib.burrito import AlignmentSet
 
-GITROOT = ROOT.parent.parent
-SOURCES = GITROOT / "Alignments/data/sources"
-ENGLANGDATAPATH = GITROOT / "alignments-eng/data"
-HINLANGDATAPATH = GITROOT / "alignments-hin/data"
+ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
+HINLANGDATAPATH = CLEARROOT / "alignments-hin/data"
 
 
 @pytest.fixture
