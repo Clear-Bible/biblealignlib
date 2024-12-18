@@ -1,19 +1,32 @@
 """Internal-only code for working with alignment data."""
 
 from enum import Enum
+import os
 from pathlib import Path
 import re
 
+import dotenv
+
 from .strongs import normalize_strongs
 
-# these values are only useful when loading this code directly: their
-# values through pip installation aren't useful
-ROOT = Path(__file__).parent
-DATAPATH = ROOT / "data"
-SRCPATH = ROOT / "src"
-GRAPECITYDIR = ROOT.parent / "grapecity-alignments"
-# for output
-ALIGNMENTSROOT = ROOT.parent / "Alignments"
+# set path variables. These assume you have a .env file that locates
+# the directory where Clear-Bible repositories are located, like
+#
+# CLEARROOT=/Users/sboisen/git/Clear-Bible
+#
+# use an environment variable if
+if not dotenv.load_dotenv():
+    print("No .env file found")
+clearrootenvar = os.getenv("CLEARROOT")
+if clearrootenvar:
+    CLEARROOT = Path(clearrootenvar)
+else:
+    CLEARROOT = Path.home() / "git/Clear-Bible"
+    print(f"No environment variable for CLEARROOT: assuming {CLEARROOT}")
+
+
+# for loading published source TSVs
+SOURCES = CLEARROOT / "Alignments/data/sources"
 
 CANONIDS = {
     "nt",
@@ -84,9 +97,8 @@ def get_canonid(bcv: str) -> str:
 
 
 __all__ = [
-    "ROOT",
-    "DATAPATH",
-    "SRCPATH",
+    "CLEARROOT",
+    "SOURCES",
     "SourceidEnum",
     # strongs
     "normalize_strongs",
