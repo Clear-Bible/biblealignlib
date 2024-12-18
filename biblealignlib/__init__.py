@@ -24,9 +24,10 @@ else:
     CLEARROOT = Path.home() / "git/Clear-Bible"
     print(f"No environment variable for CLEARROOT: assuming {CLEARROOT}")
 
-
+# for loading published data. Alignments are here under language
+ALIGNMENTSDATA = CLEARROOT / "Alignments/data"
 # for loading published source TSVs
-SOURCES = CLEARROOT / "Alignments/data/sources"
+SOURCES = ALIGNMENTSDATA / "sources"
 
 CANONIDS = {
     "nt",
