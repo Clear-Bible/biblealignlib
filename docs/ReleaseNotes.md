@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.3
+
+- add ALIGNMENTSDATA variable for CLEARROOT/Alignments/data
+
 ## 0.1.2
 
 - Add `python-dotenv` dependency, and use that with .env file or
