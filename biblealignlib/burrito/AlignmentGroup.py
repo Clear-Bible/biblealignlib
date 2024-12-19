@@ -24,7 +24,7 @@ from typing import Any, Optional
 
 from biblelib.word import bcvwpid
 
-from biblealignlib import SourceidEnum
+import biblealignlib as bal
 
 from .AlignmentType import TranslationType
 from .source import macula_prefixer
@@ -44,13 +44,13 @@ class Document:
     docid: str
     scheme: str = "BCVWP"
     # only set if a source ID
-    sourceid: Optional[SourceidEnum] = None
+    sourceid: Optional[bal.SourceidEnum] = None
 
     def __post_init__(self) -> None:
         """Compute values after initialization."""
         try:
             # set is_source if in the standard list
-            self.sourceid = SourceidEnum(self.docid)
+            self.sourceid = bal.SourceidEnum(self.docid)
         except ValueError:
             self.sourceid = None
             # downgrade BCVWP to BCVW: no subword indices if not source
