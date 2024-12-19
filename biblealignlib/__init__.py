@@ -9,6 +9,10 @@ import dotenv
 
 from .strongs import normalize_strongs
 
+# it would be nice to import symbols from burrito and autoalign here:
+# but i don't know how to avoid circular imports, when that codes also
+# imports from biblealignlib
+
 # set path variables. These assume you have a .env file that locates
 # the directory where Clear-Bible repositories are located, like
 #
