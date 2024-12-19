@@ -21,7 +21,7 @@ from .manager import Manager, VerseData
 from .BaseToken import BaseToken, asbool, bare_id
 from .source import macula_prefixer, macula_unprefixer, Source, SourceReader
 from .target import Target, TargetReader
-
+from .util import groupby_bc, groupby_bcid, groupby_bcv, token_groupby_bc, filter_by_bcv
 
 __all__ = [
     "CLEARROOT",
@@ -57,5 +57,9 @@ __all__ = [
     "TargetReader",
     "TargetWriter",
     # util
+    "groupby_bc",
+    "groupby_bcid",
     "groupby_bcv",
+    "token_groupby_bc",
+    "filter_by_bcv",
 ]
