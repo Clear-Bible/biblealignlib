@@ -1,7 +1,8 @@
 """Read data in pharaoh-format and convert to Burrito format.
 
-# use mapper.PharaohMapper() to get a mapper instance
->>> pr = reader.PharaohReader(mapper)
+# use mapper.PharaohMapper() to get a mapper instance `pm`
+>>> from biblealignlib.autoalign import reader
+>>> pr = reader.PharaohReader(pm)
 >>> pr.make_burrito(condition="myexpdirname")
 """
 
