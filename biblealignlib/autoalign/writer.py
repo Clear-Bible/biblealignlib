@@ -1,7 +1,8 @@
 """Write data in pharaoh-format using a mapping.
 
-# use mapper.PharaohMapper() to get a mapper instance
->>> pw = writer.PharaohWriter(mapper)
+# use mapper.PharaohMapper() to get a mapper instance `pm`
+>>> from biblealignlib.autoalign import writer
+>>> pw = writer.PharaohWriter(pm)
 # write pharaoh data for automated alignment
 >>> pw.pipedpath
 PosixPath('/Users/sboisen/git/Clear-Bible/autoalignment/data/eng/BSB/SBLGNT-BSB.piped.txt')
