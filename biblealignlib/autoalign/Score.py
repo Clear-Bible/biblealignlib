@@ -1,7 +1,9 @@
 """Manage scores for alignment data."""
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
+
+from biblelib.word import BCVID
 
 from biblealignlib.burrito import Source, Target, VerseData
 
@@ -35,6 +37,10 @@ class _BaseScore:
     f1: float = 0.0
     aer: float = 0.0
 
+    def __repr__(self) -> str:
+        """Return a string representation of the Score."""
+        return f"<{self.__class__.__name__}: {self.identifier}>"
+
     def compute_metrics(self) -> None:
         """Compute various metrics."""
         self.precision = precision(self.true_positives, self.false_positives)
@@ -58,11 +64,23 @@ class _BaseScore:
             "Recall": f"{self.recall:.{width}f}",
         }
 
+    def asdict(self, ndigits=3) -> dict[str, Any]:
+        """Return a dict usable as a dataframe row."""
+        scoredict = {
+            # this _should_ always be a BCV
+            "Identifier": self.identifier,
+            # just the verse index
+            "Verse": self.identifier[5:],
+            "Chapter": self.identifier[:5],
+            "Book": self.identifier[:2],
+            "Reference": BCVID(self.identifier).to_usfm(),
+            "AER": round(self.aer, ndigits),
+            "F1": round(self.f1, ndigits),
+            "Precision": round(self.precision, ndigits),
+            "Recall": round(self.recall, ndigits),
+        }
+        return scoredict
 
-    def __repr__(self) -> str:
-        """Return a string representation of the Score."""
-        return f"<{self.__class__.__name__}: {self.identifier}>"
-    
 
 @dataclass(repr=False)
 class VerseScore(_BaseScore):
@@ -96,7 +114,6 @@ class VerseScore(_BaseScore):
         # these are like pharaoh: tokens are repeated for multiple alignments
         self.referencepairs = self.reference.get_pairs()
         self.hypothesispairs = self.hypothesis.get_pairs()
-
 
 
 @dataclass(repr=False)
