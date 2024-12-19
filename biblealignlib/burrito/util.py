@@ -15,6 +15,7 @@
 
 from itertools import groupby
 from typing import Any, Callable
+import warnings
 
 from .BaseToken import BaseToken
 
@@ -24,7 +25,19 @@ def groupby_bcv(values: list[Any], bcvfn: Callable = BaseToken.to_bcv) -> dict[s
     return {k: list(g) for k, g in groupby(values, bcvfn)}
 
 
-def groupby_bc(values: list[str | BaseToken]) -> dict[str, list[Any]]:
+def groupby_bc(
+    items: list[Any],
+    key: Callable = lambda x: x,
+) -> dict[str, list[Any]]:
+    """Group a list of items into a dict by their BC (book+chapter) values.
+
+    key function should return a BC string for each item.
+    """
+
+    return {k: list(g) for k, g in groupby(items, key)}
+
+
+def token_groupby_bc(items: list[str | BaseToken]) -> dict[str, list[Any]]:
     """Group a list of tokens into a dict by their BC (book+chapter) values."""
 
     def _to_bc(token: BaseToken) -> str:
@@ -35,7 +48,7 @@ def groupby_bc(values: list[str | BaseToken]) -> dict[str, list[Any]]:
         else:
             raise ValueError(f"Invalid type for {token}")
 
-    return {k: list(g) for k, g in groupby(values, _to_bc)}
+    return groupby_bc(items, key=_to_bc)
 
 
 def groupby_bcid(values: list[str]) -> dict[str, list[Any]]:
@@ -72,7 +85,7 @@ def filter_by_bcv(
     if not partial:
         raise ValueError(f"No records: didn't find startbcv {startbcv}")
     if collecting:
-        lastbcv = key(items[-1])
+        lastbcv = key(list(items)[-1])
         if endbcv != lastbcv:
-            raise ValueError(f"Did not stop collecting: check endbcv {endbcv}")
+            warnings.warn(f"Did not stop collecting: check endbcv {endbcv}")
     return partial
