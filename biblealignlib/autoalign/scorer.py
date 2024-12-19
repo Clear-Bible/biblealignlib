@@ -8,9 +8,10 @@
         targetid=targetid,
         sourceid=sourceid,
         langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
->>> condition = alsetref.langdatapath.parent / f"exp/{targetid}/20241206eflomal"
+>>> condition = "20241206eflomal"
+>>> conditiondir = alsetref.langdatapath.parent / f"exp/{targetid}/{condition}"
 >>> sc = scorer.Scorer(referenceset=alsetref,
-    hypothesispath=(condition / "SBLGNT-BSB-eflomal.json"),
+    hypothesispath=(conditiondir / f"{sourceid}-{targetid}-eflomal.json"),
     hypothesisaltid="eflomal")
 # score a single verse
 >>> bcv = "41004004"
@@ -27,7 +28,10 @@ all: AER=0.1864	P=0.8136	R=0.5352	F1=0.6456
 # score all the verses, essential only
 >>> print(sc.score_all(essential=True).summary())
 all: AER=0.1424	P=0.8576	R=0.4925	F1=0.6257
-
+# score only MAT-LUK
+>>> sc.score_partial(startbcv="40001001", endbcv="42024053").summary_dict()
+# log the summary from a score
+>>> sc.log_score(summary_dict=sc.score_all().summary_dict(), comment="include distinguishing conditions")
 """
 
 import copy
@@ -165,8 +169,14 @@ class Scorer(Manager):
             verse_scores=self._score_verses(self.keys(), essential=essential),
         )
 
-    def log_score(self, essential: bool = False, comment: str = "") -> None:
-        """Log the 'all' score."""
+    def log_score(self, summary_dict: dict[str, str], comment: str = "") -> None:
+        """Log the summary dict from a score.
+
+        You should use comment to indicate what was being scored,
+        including whether essential, partial, etc.
+
+        """
+        assert "AER" in summary_dict, f"No 'AER' key: is this a summary dict? {summary_dict}"
         fieldnames = ("Condition", "AER", "F1", "Precision", "Recall", "Comment")
         # ensure the file exists
         self.scorelogfile.touch()
@@ -178,7 +188,7 @@ class Scorer(Manager):
         # could check here to see if a score for condition already
         # exists, but that seems like overkill
         with self.scorelogfile.open("a") as f:
-            scoredict = self.score_all(essential=essential).summary_dict()
+            scoredict = summary_dict.copy()
             scoredict["Condition"] = self.condition
             scoredict["Comment"] = comment
             writer = DictWriter(f, fieldnames=fieldnames, delimiter="\t")
