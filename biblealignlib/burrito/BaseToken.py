@@ -54,6 +54,10 @@ class BaseToken:
         )
 
     @property
+    def tokenstr(self) -> str:
+        return f"{self.id}, {self.text}"
+
+    @property
     def bare_id(self) -> str:
         """Return the ID minus any canon prefixes."""
         return self.id[1:] if self.id[0].isalpha() else self.id
@@ -75,5 +79,7 @@ def asbool(value: bool | str) -> str:
 
 def bare_id(identifier) -> str:
     """Strip any canon prefixes."""
-    assert bcvwpid.is_bcvwpid(identifier), f"'{identifier}' does not look like a valid BCVWPID identifier."
+    assert bcvwpid.is_bcvwpid(
+        identifier
+    ), f"'{identifier}' does not look like a valid BCVWPID identifier."
     return identifier[1:] if identifier[0].isalpha() else identifier
