@@ -24,12 +24,10 @@ are identified by a language (code), target and source IDs, and a path to the da
 
 """
 
-from collections import defaultdict, UserDict
-from typing import Optional
+from collections import UserDict
 
-from .AlignmentGroup import AlignmentGroup, AlignmentRecord
+from .AlignmentGroup import AlignmentRecord
 from .AlignmentSet import AlignmentSet
-from .BadRecord import BadRecord, Reason
 from .VerseData import VerseData
 from .alignments import AlignmentsReader
 from .source import Source, SourceReader
@@ -52,7 +50,7 @@ class Manager(UserDict):
     def __init__(
         self,
         alignmentset: AlignmentSet,
-            # this probably doesn't belong here
+        # this probably doesn't belong here
         creator: str = "GrapeCity",
         keeptargetwordpart: bool = False,
         # if True, don't remove bad records
@@ -107,7 +105,6 @@ class Manager(UserDict):
         """Return a printed representation."""
         return f"<{self.__class__.__name__} with {len(self)} keys>"
 
-        
     def read_sources(self) -> SourceReader:
         """Read source data into SourceReader."""
         return SourceReader(self.alignmentset.sourcepath)
@@ -142,13 +139,19 @@ class Manager(UserDict):
             targets=self.bcv["targets"].get(bcvid, []),
         )
 
-    def display_record(self, alrec: AlignmentRecord) -> None:
-        """Print a display for an AlignmentRecord for debugging."""
-        print(f"{alrec.meta.id} ------------")
-        for src in alrec.source_selectors:
-            print(f"Source: {self.sourceitems[src]._display if src else 'None'}")
-        for trg in alrec.target_selectors:
-            print(f"Target: {self.targetitems[trg]._display if trg else 'None'}")
+    def display_record(self, record: AlignmentRecord) -> str:
+        """Return a string for debugging records."""
+        basestr = f"{record.identifier}:"
+        # show other attributes besides the token text?
+        sources = "\n           ".join(
+            [tok.tokenstr for sel in record.source_selectors if (tok := self.sourceitems[sel])]
+        )
+        basestr += f"\n  Sources: {sources}"
+        targets = "\n           ".join(
+            [tok.tokenstr for sel in record.target_selectors if (tok := self.targetitems[sel])]
+        )
+        basestr += f"\n  Targets: {targets}"
+        return basestr
 
     def check_integrity(self) -> None:
         """Check the data and print messages for any problems."""
