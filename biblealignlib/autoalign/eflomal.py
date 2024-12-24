@@ -10,8 +10,13 @@ their conventional places.
         targetid=targetid,
         sourceid=sourceid,
         langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
+
 # set up for output to "test" as experimental condition
->>> efinst = eflomal.Eflomal(alsetref, "test")
+>>> condition = "test"
+>>> efinst = eflomal.Eflomal(alsetref, condition)
+# or with piped/alternate input
+>>> efinst = eflomal.Eflomal(alsetref, condition, inputname="SBLGNT-BSB-lemma.piped.txt")
+
 # create the forward and reverse output
 >>> efinst.run_eflomal()
 # create the symmetrized output
@@ -19,7 +24,6 @@ their conventional places.
 
 TODO:
 - run in Python rather than subprocess
-- write log file
 - better time stamping?
 """
 
@@ -29,9 +33,8 @@ import subprocess
 
 # import eflomal
 
-from biblealignlib import CLEARROOT
+from biblealignlib.burrito import CLEARROOT, AlignmentSet
 
-from biblealignlib.burrito import AlignmentSet
 
 class Eflomal:
     # aligner = eflomal.Aligner()
@@ -48,9 +51,12 @@ class Eflomal:
         # self.eflomalpath = ROOT / f".venv/bin/{self.eflomal}"
         if not inputname:
             inputname = f"{self.alignmentset.sourceid}-{self.alignmentset.targetid}.piped.txt"
-        self.inputpath = (self.autodatapath /
-                          self.alignmentset.targetlanguage /
-                          self.alignmentset.targetid / inputname)
+        self.inputpath = (
+            self.autodatapath
+            / self.alignmentset.targetlanguage
+            / self.alignmentset.targetid
+            / inputname
+        )
         self.expdir = self.alignmentset.langdatapath.parent / "exp" / self.alignmentset.targetid
         self.conditiondir = self.expdir / condition
         self.conditiondir.mkdir(parents=True, exist_ok=True)
@@ -64,9 +70,8 @@ class Eflomal:
         self.reversepath: Path = self.conditiondir / "reverse.pharaoh.txt"
         self.priorspath: Path = self.conditiondir / "priors.tsv"
 
-
     def log(self, message: str) -> None:
-        timestr = datetime.now().isoformat(timespec='minutes')
+        timestr = datetime.now().isoformat(timespec="minutes")
         print(message)
         with self.logfilepath.open("a") as f:
             f.write(f"{timestr} {message}\n")
@@ -75,7 +80,7 @@ class Eflomal:
     #     self.aligner.align(
     #         src_input=self
     #     )
-    
+
     def run_eflomal(self, readpriors: bool = False) -> None:
         """Run eflomal-align with parameters in a shell process.
 
@@ -97,7 +102,7 @@ class Eflomal:
     def run_makepriors(self) -> None:
         """Run eflomal-makepriors with parameters in a shell process.
 
-        Requires a previous run_eflomal. 
+        Requires a previous run_eflomal.
         """
         command = [self.makepriors]
         command += ["--input", str(self.inputpath)]
@@ -112,8 +117,15 @@ class Eflomal:
 
     def run_atools(self) -> None:
         """Run atools with parameters in a shell process."""
-        atoolscmd = [self.atools, "-i", self.forwardpath, "-j", self.reversepath,
-                     "-c", "grow-diag-final-and"]
+        atoolscmd = [
+            self.atools,
+            "-i",
+            self.forwardpath,
+            "-j",
+            self.reversepath,
+            "-c",
+            "grow-diag-final-and",
+        ]
         self.log(f"Command: {atoolscmd}")
         with self.pharaohpath.open("w") as f:
             atoolscode = subprocess.run(atoolscmd, stdout=f)
