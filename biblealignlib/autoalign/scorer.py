@@ -2,17 +2,11 @@
 
 >>> from biblealignlib.burrito import CLEARROOT, AlignmentSet
 >>> from biblealignlib.autoalign import scorer
-# your local copy of alignments-eng/data
->>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
->>> alsetref = AlignmentSet(targetlanguage=targetlang,
-        targetid=targetid,
-        sourceid=sourceid,
-        langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
->>> condition = "20241206eflomal"
->>> conditiondir = alsetref.langdatapath.parent / f"exp/{targetid}/{condition}"
->>> sc = scorer.Scorer(referenceset=alsetref,
-    hypothesispath=(conditiondir / f"{sourceid}-{targetid}-eflomal.json"),
-    hypothesisaltid="eflomal")
+
+# the easy way: this bundles up these various steps into one scoring condition
+> sc = scorer.ScoreCondition(targetlang="eng", targetid="BSB", condition="20241220_text")
+# see Scorer for the individual steps
+
 # score a single verse
 >>> bcv = "41004004"
 >>> sc.score_verse(bcv)
@@ -32,6 +26,7 @@ all: AER=0.1424	P=0.8576	R=0.4925	F1=0.6257
 >>> sc.score_partial(startbcv="40001001", endbcv="42024053").summary_dict()
 # log the summary from a score
 >>> sc.log_score(summary_dict=sc.score_all().summary_dict(), comment="include distinguishing conditions")
+
 """
 
 import copy
@@ -44,6 +39,7 @@ from typing import Optional
 
 import pandas as pd
 
+import biblealignlib as bal
 from biblealignlib.burrito import (
     AlignmentRecord,
     AlignmentSet,
@@ -246,3 +242,34 @@ class Scorer(Manager):
             for (trg, textdisplay) in target_text.items()
         }
         return pd.DataFrame(dfdata, index=[getattr(src, srcattr) for src in sources])
+
+
+# this may be a weird overload
+class ScoreCondition(Scorer):
+    """Bundle up parameters for scoring."""
+
+    def __init__(
+        self,
+        targetlang: str,
+        targetid: str,
+        # the directory name where hypothesis data is found
+        condition: str,
+        sourceid: str = "SBLGNT",
+        # altid for alignment json
+        hypothesisaltid: str = "eflomal",
+        lemma: bool = False,
+    ) -> None:
+        """Initialize an instance."""
+        self.alsetref = AlignmentSet(
+            targetlanguage=targetlang,
+            targetid=targetid,
+            sourceid=sourceid,
+            langdatapath=(bal.CLEARROOT / f"alignments-{targetlang}/data"),
+        )
+        self.conditiondir = self.alsetref.langdatapath.parent / f"exp/{targetid}/{condition}"
+        assert self.conditiondir.exists(), f"conditiondir does not exist: {self.conditiondir}"
+        super().__init__(
+            referenceset=self.alsetref,
+            hypothesispath=(self.conditiondir / f"{sourceid}-{targetid}-{hypothesisaltid}.json"),
+            hypothesisaltid=hypothesisaltid,
+        )
