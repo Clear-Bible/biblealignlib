@@ -1,20 +1,31 @@
 """Write data in pharaoh-format using a mapping.
 
-# use mapper.PharaohMapper() to get a mapper instance `pm`
 >>> from biblealignlib.autoalign import writer
->>> pw = writer.PharaohWriter(pm)
+>>> pw = writer.PharaohWriter(targetlang="eng",
+        targetid="BSB",
+        sourceid="SBLGNT",
+        )
 # write pharaoh data for automated alignment
 >>> pw.pipedpath
 PosixPath('/Users/sboisen/git/Clear-Bible/autoalignment/data/eng/BSB/SBLGNT-BSB.piped.txt')
 >>> pw.write_piped()
 
+# or write lemmas for
+>>> pw = writer.PharaohWriter(targetlang="eng",
+        targetid="BSB",
+        sourceid="SBLGNT",
+        pipedname=f"{sourceid}-{targetid}-lemma.piped.txt",
+        )
+>>> pw.write_piped(sourcetokenattr="lemma")
+Writing data to /Users/sboisen/git/Clear-Bible/autoalignment/data/rus/RUSSYN/SBLGNT-RUSSYN-lemma.piped.txt
+# (the lemma file will generally be smaller)
 """
 
 from pathlib import Path
 
 from biblelib.word import BCVID
 
-from biblealignlib import CLEARROOT
+from biblealignlib.burrito import CLEARROOT, AlignmentSet
 from .mapper import PharaohMapper
 
 
@@ -25,11 +36,19 @@ class PharaohWriter:
 
     def __init__(
         self,
-        mapper: PharaohMapper,
+        targetlang: str,
+        targetid: str,
+        sourceid: str = "SBLGNT",
         pipedname: str = "",
     ) -> None:
         """Initialize the PharaohWriter for mapper."""
-        self.mapper = mapper
+        self.alset = AlignmentSet(
+            targetlanguage=targetlang,
+            targetid=targetid,
+            sourceid=sourceid,
+            langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"),
+        )
+        self.mapper = PharaohMapper(self.alset)
         # encode conventions for output
         self._outdatapath: Path = CLEARROOT / "autoalignment/data"
         assert self._outdatapath.exists(), f"{self._outdatapath} must exist: need to pull the repo?"
@@ -46,22 +65,22 @@ class PharaohWriter:
         self.pipedpath = self.outdatapath / pipedname
 
     # not clear this is still needed
-    def write_pharaoh(self, outpath: Path) -> None:
-        """Write pharaoh data for alignments, one line per verse (vline format).
+    # def write_pharaoh(self, outpath: Path) -> None:
+    #     """Write pharaoh data for alignments, one line per verse (vline format).
 
-        Example: 2-5 0-2 1-4 0-3 3-1 3-0
-        """
-        with outpath.open("w") as outfile:
-            for bcv in self.mapper.bcv["sources"]:
-                try:
-                    if bcv in self.mapper.bcv["mappings"]:
-                        outfile.write(
-                            " ".join([f"{s}-{t}" for s, t in self.mapper.bcv_pharaoh(bcv)])
-                        )
-                        # writes an empty line if no alignments
-                    outfile.write("\n")
-                except Exception as e:
-                    print(f"write_pharaoh failed on {bcv}\n{e}")
+    #     Example: 2-5 0-2 1-4 0-3 3-1 3-0
+    #     """
+    #     with outpath.open("w") as outfile:
+    #         for bcv in self.mapper.bcv["sources"]:
+    #             try:
+    #                 if bcv in self.mapper.bcv["mappings"]:
+    #                     outfile.write(
+    #                         " ".join([f"{s}-{t}" for s, t in self.mapper.bcv_pharaoh(bcv)])
+    #                     )
+    #                     # writes an empty line if no alignments
+    #                 outfile.write("\n")
+    #             except Exception as e:
+    #                 print(f"write_pharaoh failed on {bcv}\n{e}")
 
     def _write_piped(
         self,
