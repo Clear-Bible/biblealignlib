@@ -3,9 +3,10 @@
 >>> from biblealignlib.burrito import CLEARROOT, AlignmentSet
 >>> from biblealignlib.autoalign import scorer
 
-# the easy way: this bundles up these various steps into one scoring condition
+# the easy way: this bundles up these various steps into one scoring
+# condition but makes more assumptions
 > sc = scorer.ScoreCondition(targetlang="eng", targetid="BSB", condition="20241220_text")
-# see Scorer for the individual steps
+# see ScoreCondition for the individual steps
 
 # score a single verse
 >>> bcv = "41004004"
@@ -24,9 +25,14 @@ all: AER=0.1864	P=0.8136	R=0.5352	F1=0.6456
 all: AER=0.1424	P=0.8576	R=0.4925	F1=0.6257
 # score only MAT-LUK
 >>> sc.score_partial(startbcv="40001001", endbcv="42024053").summary_dict()
+
 # log the summary from a score
 >>> sc.log_score(summary_dict=sc.score_all().summary_dict(), comment="include distinguishing conditions")
 
+# score and log the four base conditions with lots of assumptions
+>>> scorer.ScoreBaseConditions(targetlang="tpi", targetid="TPB08", conditionbase="20241224eflomal")
+
+# the longer way
 """
 
 import copy
@@ -257,7 +263,6 @@ class ScoreCondition(Scorer):
         sourceid: str = "SBLGNT",
         # altid for alignment json
         hypothesisaltid: str = "eflomal",
-        lemma: bool = False,
     ) -> None:
         """Initialize an instance."""
         self.alsetref = AlignmentSet(
@@ -273,3 +278,34 @@ class ScoreCondition(Scorer):
             hypothesispath=(self.conditiondir / f"{sourceid}-{targetid}-{hypothesisaltid}.json"),
             hypothesisaltid=hypothesisaltid,
         )
+
+
+class ScoreBaseConditions:
+    """Score text and lemma, full and essential, and log results.
+
+    Lots of implicit assumptions here.
+    """
+
+    def __init__(
+        self,
+        targetlang: str,
+        targetid: str,
+        # the base of the directory name where hypothesis data is found
+        # assumes "_text" and "_lemma" suffixes
+        conditionbase: str,
+        sourceid: str = "SBLGNT",
+        # altid for alignment json
+        hypothesisaltid: str = "eflomal",
+    ) -> None:
+        """Initialize an instance."""
+        for input in ("text", "lemma"):
+            sc = ScoreCondition(
+                targetlang=targetlang, targetid=targetid, condition=f"{conditionbase}_{input}"
+            )
+            sc.log_score(
+                summary_dict=sc.score_all(essential=False).summary_dict(), comment=f"full_{input}"
+            )
+            sc.log_score(
+                summary_dict=sc.score_all(essential=True).summary_dict(), comment=f"ess_{input}"
+            )
+        print(f"Scores logged to {sc.scorelogfile}")
