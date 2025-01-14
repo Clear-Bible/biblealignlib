@@ -10,11 +10,10 @@ are identified by a language (code), target and source IDs, and a path to the da
 >>> from biblealignlib.burrito import CLEARROOT, Manager, AlignmentSet
 # your local copy of alignments-eng/data
 >>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
->>> LANGDATAPATH = (CLEARROOT / f"alignments-{targetlang}/data")
 >>> alset = AlignmentSet(targetlanguage=targetlang,
         targetid=targetid,
-        sourceid="SBLGNT",
-        langdatapath=LANGDATAPATH)
+        sourceid=sourceid,
+        langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
 >>> mgr = Manager(alset)
 >>> mgr["40001024"]
 <VerseData: 40001024>
