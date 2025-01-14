@@ -1,17 +1,23 @@
 """Read data in pharaoh-format and convert to Burrito format.
 
-# use mapper.PharaohMapper() to get a mapper instance `pm`
 >>> from biblealignlib.autoalign import reader
->>> pr = reader.PharaohReader(pm)
->>> pr.make_burrito(condition="myexpdirname")
+>>> pr = reader.PharaohReader(targetlang="eng",
+        targetid="BSB",
+        sourceid="SBLGNT",
+        # must match eflomal output name: optional to set it here
+        condition="somedateeflomal_text",
+        )
+>>> pr.make_burrito()
 """
 
 from itertools import groupby, zip_longest
 from pathlib import Path
 
+import biblealignlib as bal
 from biblealignlib.burrito import (
     AlignmentGroup,
     AlignmentRecord,
+    AlignmentSet,
     AlignmentReference,
     Metadata,
     Source,
@@ -34,15 +40,24 @@ class PharaohReader:
     # maybe hand in the PharaohReader instance??
     def __init__(
         self,
-        mapper: PharaohMapper,
+        targetlang: str,
+        targetid: str,
+        condition: str,
+        sourceid: str = "SBLGNT",
         conformsTo: str = "0.3",
         origin: str = "eflomal",
         status: str = "created",
     ):
         """Initialize the PharaohMapper."""
-        self.mapper = mapper
-        self.alignmentsreader = mapper.alignmentsreader
-        self.alignmentset = mapper.alignmentset
+        self.alignmentset = AlignmentSet(
+            targetlanguage=targetlang,
+            targetid=targetid,
+            sourceid=sourceid,
+            langdatapath=(bal.CLEARROOT / f"alignments-{targetlang}/data"),
+        )
+        self.mapper = PharaohMapper(self.alignmentset)
+        self.condition = condition
+        self.alignmentsreader = self.mapper.alignmentsreader
         self.origin = origin
         self.status = status
         self.metadata = Metadata(conformsTo=conformsTo, origin=self.origin)
@@ -161,7 +176,7 @@ class PharaohReader:
 
     def make_burrito(
         self,
-        condition: str,
+        condition: str = "",
         outname: str = "",
         startbcv: str = "",
         endbcv: str = "",
@@ -176,6 +191,8 @@ class PharaohReader:
         inclusive of endbcv.
 
         """
+        if not condition:
+            condition = self.condition
         if not outname:
             if startbcv and endbcv:
                 outname = f"{self.alignmentset.sourceid}-{self.alignmentset.targetid}-{algorithm}{startbcv}{endbcv}.json"
