@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.1.4
+
+- Some updates in `autoalign` to simplify the eflomal end-to-end
+  process.
+- Numerous notebook updates
+  
 ## 0.1.3
 
 - add ALIGNMENTSDATA variable for CLEARROOT/Alignments/data
