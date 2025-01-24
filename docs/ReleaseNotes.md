@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.1.6
+
+- Add `note` attribute to `burrito.AlignmentGroup.Metadata`, since
+  ClearAligner is now exporting notes from aligners. 
+
 ## 0.1.5
 
 - Renamed `burrito.util.groupby_bc` to groupby_key: it's more general
