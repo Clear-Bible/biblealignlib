@@ -20,21 +20,23 @@ import warnings
 from .BaseToken import BaseToken
 
 
-def groupby_bcv(values: list[Any], bcvfn: Callable = BaseToken.to_bcv) -> dict[str, list[Any]]:
-    """Group a list of tokens into a dict by their BCV values."""
-    return {k: list(g) for k, g in groupby(values, bcvfn)}
-
-
-def groupby_bc(
+# this is general so belongs in Clearlib: cleanup needed
+def groupby_key(
+    # maybe really Iterable?
     items: list[Any],
     key: Callable = lambda x: x,
 ) -> dict[str, list[Any]]:
-    """Group a list of items into a dict by their BC (book+chapter) values.
+    """Group a list of items into a dict by their key values.
 
-    key function should return a BC string for each item.
+    key function should return a string for each item. This is
+    intended to be easily repurposed for other items and keys.
     """
+    return {k: list(g) for k, g in groupby(sorted(items, key=key), key)}
 
-    return {k: list(g) for k, g in groupby(items, key)}
+
+def groupby_bcv(values: list[Any], bcvfn: Callable = BaseToken.to_bcv) -> dict[str, list[Any]]:
+    """Group a list of tokens into a dict by their BCV values."""
+    return {k: list(g) for k, g in groupby(values, bcvfn)}
 
 
 def token_groupby_bc(items: list[str | BaseToken]) -> dict[str, list[Any]]:
@@ -48,7 +50,7 @@ def token_groupby_bc(items: list[str | BaseToken]) -> dict[str, list[Any]]:
         else:
             raise ValueError(f"Invalid type for {token}")
 
-    return groupby_bc(items, key=_to_bc)
+    return groupby_key(items, key=_to_bc)
 
 
 def groupby_bcid(values: list[str]) -> dict[str, list[Any]]:
