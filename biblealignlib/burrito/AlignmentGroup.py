@@ -147,6 +147,8 @@ class Metadata:
     description: str = ""
     # for AlignmentRecords: unique identifier
     id: str = ""
+    # notes from aligners
+    note: str = ""
     # for AlignmentRecords: how was this alignment originally created?
     # This does *not* capture changes to the original value.
     # common values include 'manual', 'automated' or an algorithm name
