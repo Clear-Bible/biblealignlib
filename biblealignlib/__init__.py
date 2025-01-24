@@ -18,7 +18,7 @@ from .strongs import normalize_strongs
 #
 # CLEARROOT=/Users/sboisen/git/Clear-Bible
 #
-# use an environment variable if
+# use an environment variable if available
 if not dotenv.load_dotenv():
     print("No .env file found")
 clearrootenvar = os.getenv("CLEARROOT")
