@@ -1,5 +1,12 @@
 # Release Notes
 
+## 0.1.5
+
+- Renamed `burrito.util.groupby_bc` to groupby_key: it's more general
+  than just BC strings. Also adding sorting, which is required for
+  `itertools.groupby` to work correctly.
+- Added `burrito.source.content_token_dict`. 
+
 ## 0.1.4
 
 - Some updates in `autoalign` to simplify the eflomal end-to-end
