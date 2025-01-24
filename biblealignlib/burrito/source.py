@@ -51,6 +51,9 @@ from biblelib.word import bcvwpid
 
 # should eventually come from Clearlib
 from biblealignlib import normalize_strongs, get_canonid
+
+# should eventually come from Clearlib
+from .util import groupby_key
 from .BaseToken import BaseToken
 
 PREFIXRE = re.compile(r"^[no]")
@@ -312,6 +315,21 @@ class SourceReader(UserDict):
         else:
             vocab = {getattr(stok, tokenattr) for stok in self.values()}
         return sorted(vocab)
+
+    def content_token_dict(self, lower: bool = True) -> dict[str, Source]:
+        """Return mapping from content text strings to token instances.
+
+        If lower (default is True), text is lower-cases.
+
+        """
+
+        def token_lemma_lower(token: Source) -> str:
+            return token.lemma.lower()
+
+        content_tokens = [tok for tok in self.sourceitems.values() if tok.is_content]
+        return groupby_key(content_tokens, token_lemma_lower)
+        # sorted_content = sorted(tok for tok in self.sourceitems.values() if tok.is_content)
+        # return {k: list(g) for k, g in groupby(sorted_content, token_lemma_lower)}
 
     # This assumes the standard set of output fields. That might
     # include fields with no content.
