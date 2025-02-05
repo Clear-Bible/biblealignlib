@@ -31,19 +31,21 @@ class DiffRecord:
     # the alignment BCV
     bcvid: str
     # the data in the first alignment
-    sources1: tuple[Source, ...]
-    targets1: tuple[Target, ...]
+    sources1: tuple[Source, ...] = ()
+    targets1: tuple[Target, ...] = ()
     # the data in the second alignment
-    sources2: tuple[Source, ...]
-    targets2: tuple[Target, ...]
+    sources2: tuple[Source, ...] = ()
+    targets2: tuple[Target, ...] = ()
     # why it's different
-    diffreason: DiffReason
+    diffreason: Optional[DiffReason] = None
     # any auxiliary data
     data: tuple = ()
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        basestr = f"<DiffRecord ({self.identifier}): '{self.diffreason.value}'"
+        basestr = (
+            f"<DiffRecord ({self.bcvid}): '{self.diffreason.value if self.diffreason else None}'"
+        )
         if self.data:
             basestr += ", " + repr(self.data)
         basestr += ">"
