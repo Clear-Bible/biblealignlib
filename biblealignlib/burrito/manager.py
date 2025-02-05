@@ -81,8 +81,8 @@ class Manager(UserDict):
                 list(self.targetitems.values()), bcvfn=lambda t: t.source_verse
             ),
         }
-        # The cleaned AlignmentRecords are in the alignmentgroup
-        # self.alignmentsreader = self.get_alignmentsreader(self.alignmentset)
+        # The cleaned AlignmentRecords are in
+        # self.alignmentsreader.alignmentgroup
         # used in multiple fns under _clean_alignmentrecord
         self.alignmentsreader: AlignmentsReader = AlignmentsReader(
             alignmentset=alignmentset,
