@@ -36,6 +36,7 @@ from typing import Optional
 
 # from biblealignlib.burrito import DiffRecord, Manager, VerseData
 from ..burrito import AlignmentGroup, AlignmentRecord, Manager, VerseData, write_alignment_group
+from ..burrito.util import groupby_bcid
 from ..burrito.VerseData import DiffRecord
 
 
@@ -93,6 +94,16 @@ class Merger:
                 bcv, self.mgr1.bcv["versedata"].get(bcv), self.mgr2.bcv["versedata"].get(bcv)
             )
         return bcv_pairs
+
+    def show_diffs(self) -> None:
+        """Display information about overlaps that differ."""
+        overlap_bcs = groupby_bcid([bcvp.bcv for bcvp in self.diffpairs])
+        print(f"{len(overlap_bcs)} overlapping and different chapters")
+        print(overlap_bcs.keys())
+        for bcvpair in self.diffpairs:
+            vd1 = bcvpair.mgr1_data
+            vd2 = bcvpair.mgr2_data
+            print(bcvpair.bcv, ": ", len(vd1.alignments), "---", len(vd2.alignments))
 
     def safe_merge(self) -> AlignmentGroup:
         """Return a new AlignmentGroup merging records where safe."""
