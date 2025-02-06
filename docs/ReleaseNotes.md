@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.1.7
+
+- Add `util.merger` code for merging multiple alignments on the same
+  data. Still WIP. 
+- Bug fix for `VerseData.repr()`. 
+
 ## 0.1.6
 
 - Add `note` attribute to `burrito.AlignmentGroup.Metadata`, since
