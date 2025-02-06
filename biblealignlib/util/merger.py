@@ -35,7 +35,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 # from biblealignlib.burrito import DiffRecord, Manager, VerseData
-from ..burrito import Manager, VerseData
+from ..burrito import AlignmentGroup, AlignmentRecord, Manager, VerseData, write_alignment_group
 from ..burrito.VerseData import DiffRecord
 
 
@@ -93,3 +93,51 @@ class Merger:
                 bcv, self.mgr1.bcv["versedata"].get(bcv), self.mgr2.bcv["versedata"].get(bcv)
             )
         return bcv_pairs
+
+    def safe_merge(self) -> AlignmentGroup:
+        """Return a new AlignmentGroup merging records where safe."""
+        algroup1 = self.mgr1.alignmentsreader.alignmentgroup
+        # get the records that only belong to one side
+        disjoint1 = [bcv for bcv, bcvp in self.bcv_pairs.items() if bcvp.pairing == "mgr1"]
+        disjointrecords: list[AlignmentRecord] = [
+            alrec for bcv in disjoint1 for alrec in self.mgr1.bcv["records"][bcv]
+        ]
+        disjoint2 = [bcv for bcv, bcvp in self.bcv_pairs.items() if bcvp.pairing == "mgr2"]
+        disjointrecords += [alrec for bcv in disjoint2 for alrec in self.mgr2.bcv["records"][bcv]]
+        return AlignmentGroup(
+            documents=algroup1.documents,
+            meta=algroup1.meta,
+            records=sorted(disjointrecords),
+            roles=algroup1.roles,
+        )
+
+    def add_records(
+        self, algroup: AlignmentGroup, records: tuple[AlignmentRecord, ...]
+    ) -> AlignmentGroup:
+        """Add records to algroup and return a new AlignmentGroup."""
+        # check for any duplication
+        recordsdict: dict[str, AlignmentRecord] = {
+            recid: record
+            for record in algroup.records
+            if (recid := "-".join(record.source_selectors))
+        }
+        for record in records:
+            recid = "-".join(record.source_selectors)
+            assert recid not in recordsdict, f"Duplicate record {record}"
+        return AlignmentGroup(
+            documents=algroup.documents,
+            meta=algroup.meta,
+            records=sorted(algroup.records + list(records)),
+            roles=algroup.roles,
+        )
+
+    def write_merge(self) -> None:
+        """Write the safely-merged AlignmentGroup."""
+        newgroup = self.safe_merge()
+        alset1 = self.mgr1.alignmentset
+        alignmentpath = alset1.alignmentpath
+        targetid = alset1.targetid
+        sourceid = alset1.sourceid
+        newname = alset1.alternateid + self.mgr2.alignmentset.alternateid
+        with alignmentpath.with_name(f"{sourceid}-{targetid}-{newname}.json").open("w") as f:
+            write_alignment_group(newgroup, f)
