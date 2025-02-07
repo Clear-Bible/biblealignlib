@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.1.8
+
+- Add `util.merger.Merge.show_diffs` for displaying overlapping
+  differences between two sets of multiple alignments.
+
 ## 0.1.7
 
 - Add `util.merger` code for merging multiple alignments on the same
