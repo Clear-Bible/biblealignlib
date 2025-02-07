@@ -1,7 +1,7 @@
 """Class for managing alignments and tokens at the verse level."""
 
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
@@ -10,6 +10,7 @@ import pandas as pd
 
 from .source import Source
 from .target import Target
+from .AlignmentGroup import AlignmentRecord
 
 
 class DiffReason(Enum):
@@ -18,12 +19,13 @@ class DiffReason(Enum):
     DIFFLEN = "Different number of alignments"
     DIFFSOURCES = "Source selectors differ"
     DIFFTARGETS = "Target selectors differ"
+    DIFFNOTES = "Different notes"
+    DIFFSTATUS = "Different status"
 
 
 @dataclass
 class DiffRecord:
     """Container for data on alignment differences.
-
 
     The same verse could have multiple alignment differences.
     """
@@ -62,6 +64,7 @@ class VerseData:
     # unique identifier for book, chapter, and verse
     bcvid: str
     alignments: list[tuple[list[Source], list[Target]]]
+    records: tuple[AlignmentRecord]
     sources: list[Source]
     # includes excluded tokens
     targets: list[Target]
@@ -221,6 +224,7 @@ class VerseData:
         else:
             return None
 
+    # TODO: compare
     def diff(self, other: "VerseData") -> Optional[list[DiffRecord]]:
         """Return a (possibly empty) list of differences between the alignments data.
 
@@ -241,4 +245,20 @@ class VerseData:
                 result = self._diff_pair(basedict, pair)
                 if result:
                     diffs.append(result)
+            # need to consolidate this better
+            for rec1, rec2 in zip(self.records, other.records):
+                if rec1.meta.status != rec2.meta.status:
+                    diffstatus = DiffRecord(
+                        **basedict,
+                        diffreason=DiffReason.DIFFSTATUS,
+                        data=(rec1.meta.status, rec2.meta.status),
+                    )
+                    diffs.append([diffstatus])
+                if rec1.meta.note != rec2.meta.note:
+                    diffnotes = DiffRecord(
+                        **basedict,
+                        diffreason=DiffReason.DIFFNOTES,
+                        data=(rec1.meta.note, rec2.meta.note),
+                    )
+                    diffs.append([diffnotes])
             return diffs
