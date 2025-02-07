@@ -98,8 +98,7 @@ class Merger:
     def show_diffs(self) -> None:
         """Display information about overlaps that differ."""
         overlap_bcs = groupby_bcid([bcvp.bcv for bcvp in self.diffpairs])
-        print(f"{len(overlap_bcs)} overlapping and different chapters")
-        print(overlap_bcs.keys())
+        print(f"{len(overlap_bcs)} overlapping and different chapters: {overlap_bcs.keys()}")
         for bcvpair in self.diffpairs:
             vd1 = bcvpair.mgr1_data
             vd2 = bcvpair.mgr2_data
@@ -115,9 +114,11 @@ class Merger:
         ]
         disjoint2 = [bcv for bcv, bcvp in self.bcv_pairs.items() if bcvp.pairing == "mgr2"]
         disjointrecords += [alrec for bcv in disjoint2 for alrec in self.mgr2.bcv["records"][bcv]]
+        mergedmeta = algroup1.meta
+        mergedmeta.creator = "Merger"
         return AlignmentGroup(
             documents=algroup1.documents,
-            meta=algroup1.meta,
+            meta=mergedmeta,
             records=sorted(disjointrecords),
             roles=algroup1.roles,
         )
