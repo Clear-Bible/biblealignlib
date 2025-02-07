@@ -96,7 +96,7 @@ class Manager(UserDict):
         )
         # and make VerseData instances
         self.data = self.bcv["versedata"] = {
-            bcvid: self.make_versedata(bcvid, self.bcv["records"]) for bcvid in self.bcv["records"]
+            bcvid: self.make_versedata(bcvid) for bcvid in self.bcv["records"]
         }
         self.check_integrity()
 
@@ -113,13 +113,11 @@ class Manager(UserDict):
         # may need more single-name target files
         return TargetReader(self.alignmentset.targetpath, keepwordpart=self.keeptargetwordpart)
 
-    def make_versedata(
-        self, bcvid: str, verserecords: dict[str, list[AlignmentRecord]]
-    ) -> VerseData:
+    def make_versedata(self, bcvid: str) -> VerseData:
         """Return a VerseData instance for a BCV reference."""
         alpairs: list[tuple[list[str], list[str]]] = [
             (ardict["source"], ardict["target"])
-            for ar in verserecords[bcvid]
+            for ar in self.bcv["records"][bcvid]
             # internal so omit macula prefix
             if (ardict := ar.asdict(withmaculaprefix=False))
         ]
@@ -134,6 +132,7 @@ class Manager(UserDict):
         return VerseData(
             bcvid=bcvid,
             alignments=alinstpairs,
+            records=tuple(self.bcv["records"][bcvid]),
             sources=self.bcv["sources"].get(bcvid, []),
             targets=self.bcv["targets"].get(bcvid, []),
         )
