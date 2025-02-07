@@ -153,8 +153,9 @@ class Metadata:
     # This does *not* capture changes to the original value.
     # common values include 'manual', 'automated' or an algorithm name
     origin: str = ""
-    # for ClearAligner to track status. Output here should always be
-    # 'created': set in Manager._make_record() so it's not set of AlignmentGroup metadata
+    # for ClearAligner to track status. Initial value here should
+    # always be 'created': set in Manager._make_record() so it's not
+    # set for AlignmentGroup metadata.
     # eventually i may need to separate this into two classes, one for
     # Groups and one for Records.
     status: str = ""
