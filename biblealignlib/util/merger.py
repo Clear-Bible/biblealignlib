@@ -79,7 +79,7 @@ class Merger:
             ), f"Managers must have the same {attr} attribute."
         # should be the same for both
         self.allsrcbcv = mgr1.bcv["sources"]
-        self.bcv_pairs = self.get_bcv_pairs()
+        self.bcv_pairs: dict[str, BCVPair] = self.get_bcv_pairs()
         self.pairingcounts = Counter(bcvp.pairing for bcvp in self.bcv_pairs.values())
         # overlaps
         self.overlaps = [bcvp for bcvp in self.bcv_pairs.values() if bcvp.pairing == "both"]
@@ -104,6 +104,10 @@ class Merger:
             vd2 = bcvpair.mgr2_data
             print(bcvpair.bcv, ": ", len(vd1.alignments), "---", len(vd2.alignments))
 
+    # 'safe' means no differences. There are some differences that
+    # _could_ be merged without risk, especially if the only
+    # difference is status ('approved' > 'needsReview' > 'created') or notes (some
+    # note > no note). This needs another method.
     def safe_merge(self) -> AlignmentGroup:
         """Return a new AlignmentGroup merging records where safe."""
         algroup1 = self.mgr1.alignmentsreader.alignmentgroup
