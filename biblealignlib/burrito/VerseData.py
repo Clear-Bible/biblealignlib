@@ -253,12 +253,12 @@ class VerseData:
                         diffreason=DiffReason.DIFFSTATUS,
                         data=(rec1.meta.status, rec2.meta.status),
                     )
-                    diffs.append([diffstatus])
+                    diffs.append(diffstatus)
                 if rec1.meta.note != rec2.meta.note:
                     diffnotes = DiffRecord(
                         **basedict,
                         diffreason=DiffReason.DIFFNOTES,
                         data=(rec1.meta.note, rec2.meta.note),
                     )
-                    diffs.append([diffnotes])
+                    diffs.append(diffnotes)
             return diffs
