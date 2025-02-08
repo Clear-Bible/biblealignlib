@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.1.10
+
+- Bug fix to `burrito.VerseData.VerseData.diff()`: don't add a
+  suprious extra list layer to return.
+
 ## 0.1.9
 
 - Improvements to `util.merger.Merger`.
