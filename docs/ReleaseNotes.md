@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.11
+
+- Trivial addition `util.merger.Merger`: type hint, comment for future work.
+
 ## 0.1.10
 
 - Bug fix to `burrito.VerseData.VerseData.diff()`: don't add a
