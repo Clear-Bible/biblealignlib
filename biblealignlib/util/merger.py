@@ -108,22 +108,36 @@ class Merger:
     # _could_ be merged without risk, especially if the only
     # difference is status ('approved' > 'needsReview' > 'created') or notes (some
     # note > no note). This needs another method.
-    def safe_merge(self) -> AlignmentGroup:
+    def safe_merge(self, verbose: bool = True) -> AlignmentGroup:
         """Return a new AlignmentGroup merging records where safe."""
         algroup1 = self.mgr1.alignmentsreader.alignmentgroup
         # get the records that only belong to one side
         disjoint1 = [bcv for bcv, bcvp in self.bcv_pairs.items() if bcvp.pairing == "mgr1"]
-        disjointrecords: list[AlignmentRecord] = [
+        mergedrecords: list[AlignmentRecord] = [
             alrec for bcv in disjoint1 for alrec in self.mgr1.bcv["records"][bcv]
         ]
+        if verbose:
+            print(f"mgr1 records: {len(mergedrecords)}")
         disjoint2 = [bcv for bcv, bcvp in self.bcv_pairs.items() if bcvp.pairing == "mgr2"]
-        disjointrecords += [alrec for bcv in disjoint2 for alrec in self.mgr2.bcv["records"][bcv]]
+        mergedrecords += [alrec for bcv in disjoint2 for alrec in self.mgr2.bcv["records"][bcv]]
+        if verbose:
+            print(f"after mgr2 records: {len(mergedrecords)}")
+        # here add where pairing == 'both' if no diffs
+        bothbcv = [
+            bcv
+            for bcv, bcvp in self.bcv_pairs.items()
+            if bcvp.pairing == "both" and not (bcvp.diffs)
+        ]
+        # take mgr1 because they're the same
+        mergedrecords += [alrec for bcv in bothbcv for alrec in self.mgr1.bcv["records"][bcv]]
+        if verbose:
+            print(f"after both records: {len(mergedrecords)}")
         mergedmeta = algroup1.meta
         mergedmeta.creator = "Merger"
         return AlignmentGroup(
             documents=algroup1.documents,
             meta=mergedmeta,
-            records=sorted(disjointrecords),
+            records=sorted(mergedrecords),
             roles=algroup1.roles,
         )
 
