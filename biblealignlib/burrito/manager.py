@@ -100,7 +100,7 @@ class Manager(UserDict):
         }
         self.check_integrity()
 
-    def __repr__(self) -> None:
+    def __repr__(self) -> str:
         """Return a printed representation."""
         return f"<{self.__class__.__name__} with {len(self)} keys>"
 
