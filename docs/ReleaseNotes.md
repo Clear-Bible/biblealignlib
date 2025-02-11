@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.1.12
+
+- Upgrade merger to also merge when records are in both sets of
+  alignments and have no differences; otherwise losing good data. 
+
 ## 0.1.11
 
 - Trivial addition `util.merger.Merger`: type hint, comment for future work.
