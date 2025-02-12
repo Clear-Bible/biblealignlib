@@ -1,9 +1,9 @@
 """Class for managing alignments and tokens at the verse level."""
 
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 
 import pandas as pd
 
@@ -64,12 +64,12 @@ class VerseData:
     # unique identifier for book, chapter, and verse
     bcvid: str
     alignments: list[tuple[list[Source], list[Target]]]
-    records: tuple[AlignmentRecord]
+    records: tuple[AlignmentRecord, ...]
     sources: list[Source]
     # includes excluded tokens
     targets: list[Target]
     # computed
-    targets_included: tuple[Target] = ()
+    targets_included: tuple[Target, ...] = ()
     _typeattrs = ["sources", "targets"]
 
     def __post_init__(self) -> None:
@@ -80,7 +80,7 @@ class VerseData:
         """Return a string representation."""
         return f"<VerseData: {self.bcvid}>"
 
-    def get_pairs(self, essential=False) -> list[tuple[Source, Target]]:
+    def get_pairs(self, essential: bool=False) -> list[tuple[Source, Target]]:
         """Return pharaoh-style pairs of source and target tokens.
 
         Tokens are repeated as necessary in the sequence to express
@@ -205,8 +205,7 @@ class VerseData:
         return pd.DataFrame(dfdata, index=[getattr(src, srcattr) for src in self.sources])
 
     @staticmethod
-    def _diff_pair(
-        basedict: dict[str, str], pair: tuple[tuple[list[Source], list[Target]]]
+    def _diff_pair(bcvid: str, pair: tuple[tuple[list[Source], list[Target]], tuple[list[Source], list[Target]]]
     ) -> Optional[DiffRecord]:
         """Compare an alignment pair of Source and Target."""
         if pair[0] != pair[1]:
@@ -214,15 +213,12 @@ class VerseData:
             sources1, targets1 = pair[0]
             sources2, targets2 = pair[1]
             if sources1 != sources2:
-                return DiffRecord(
-                    **basedict, diffreason=DiffReason.DIFFSOURCES, data=(sources1, sources2)
+                return DiffRecord(bcvid=bcvid, diffreason=DiffReason.DIFFSOURCES, data=(sources1, sources2)
                 )
             if targets1 != targets2:
-                return DiffRecord(
-                    **basedict, diffreason=DiffReason.DIFFTARGETS, data=(targets1, targets2)
+                return DiffRecord(bcvid=bcvid, diffreason=DiffReason.DIFFTARGETS, data=(targets1, targets2)
                 )
-        else:
-            return None
+        return None
 
     # TODO: compare
     def diff(self, other: "VerseData") -> Optional[list[DiffRecord]]:
@@ -234,29 +230,28 @@ class VerseData:
 
         """
         assert isinstance(other, VerseData), "Can only compare two VerseData instances."
-        basedict = {"bcvid": self.bcvid}
         if len(self.alignments) != len(other.alignments):
             # no point continuing to compare here
-            return [DiffRecord(**basedict, diffreason=DiffReason.DIFFLEN)]
+            return [DiffRecord(bcvid=self.bcvid, diffreason=DiffReason.DIFFLEN)]
         else:
             # use a list comprehension
             diffs: list[DiffRecord] = []
             for pair in zip(self.alignments, other.alignments):
-                result = self._diff_pair(basedict, pair)
+                result = self._diff_pair(bcvid=self.bcvid, pair=pair)
                 if result:
                     diffs.append(result)
             # need to consolidate this better
             for rec1, rec2 in zip(self.records, other.records):
                 if rec1.meta.status != rec2.meta.status:
                     diffstatus = DiffRecord(
-                        **basedict,
+                        bcvid=self.bcvid,
                         diffreason=DiffReason.DIFFSTATUS,
                         data=(rec1.meta.status, rec2.meta.status),
                     )
                     diffs.append(diffstatus)
                 if rec1.meta.note != rec2.meta.note:
                     diffnotes = DiffRecord(
-                        **basedict,
+                        bcvid=self.bcvid,
                         diffreason=DiffReason.DIFFNOTES,
                         data=(rec1.meta.note, rec2.meta.note),
                     )
