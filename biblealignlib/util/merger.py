@@ -32,7 +32,7 @@ Counter({'neither': 6191, 'mgr1': 1272, 'both': 475, 'mgr2': 1})
 
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import cast, Optional
 
 # from biblealignlib.burrito import DiffRecord, Manager, VerseData
 from ..burrito import AlignmentGroup, AlignmentRecord, Manager, VerseData, write_alignment_group
@@ -48,7 +48,7 @@ class BCVPair:
     mgr1_data: Optional[VerseData] = None
     mgr2_data: Optional[VerseData] = None
     pairing: str = ""
-    diffs: Optional[list[DiffRecord]] = field(init=False, default_factory=list)
+    diffs: Optional[list[DiffRecord]] = field(init=False, default_factory=list[DiffRecord])
 
     def __post_init__(self) -> None:
         """Initialize an instance."""
@@ -90,8 +90,16 @@ class Merger:
         """Return a dictionary of BCVPair instances."""
         bcv_pairs = {}
         for bcv in self.allsrcbcv:
+            data1: Optional[VerseData] = cast(
+                Optional[VerseData], self.mgr1.bcv["versedata"].get(bcv)
+            )
+            data2: Optional[VerseData] = cast(
+                Optional[VerseData], self.mgr2.bcv["versedata"].get(bcv)
+            )
             bcv_pairs[bcv] = BCVPair(
-                bcv, self.mgr1.bcv["versedata"].get(bcv), self.mgr2.bcv["versedata"].get(bcv)
+                bcv=bcv,
+                mgr1_data=data1,
+                mgr2_data=data2,
             )
         return bcv_pairs
 
@@ -100,9 +108,9 @@ class Merger:
         overlap_bcs = groupby_bcid([bcvp.bcv for bcvp in self.diffpairs])
         print(f"{len(overlap_bcs)} overlapping and different chapters: {overlap_bcs.keys()}")
         for bcvpair in self.diffpairs:
-            vd1 = bcvpair.mgr1_data
-            vd2 = bcvpair.mgr2_data
-            print(bcvpair.bcv, ": ", len(vd1.alignments), "---", len(vd2.alignments))
+            vd1 = bcvpair.mgr1_data.alignments if bcvpair.mgr1_data else ()
+            vd2 = bcvpair.mgr2_data.alignments if bcvpair.mgr2_data else ()
+            print(bcvpair.bcv, ": ", str(len(vd1)), "---", str(len(vd2)))
 
     # 'safe' means no differences. There are some differences that
     # _could_ be merged without risk, especially if the only
