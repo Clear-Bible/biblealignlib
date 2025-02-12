@@ -1,5 +1,12 @@
 # Release Notes
 
+## UNRELEASED
+
+- rehabbed `mypy` configuration in pyproject.toml
+- stricter type checking and fixes for `burrito.manager`,
+  `burrito.VerseData`, `util.merger`. 
+  
+  
 ## 0.1.12
 
 - Upgrade merger to also merge when records are in both sets of
