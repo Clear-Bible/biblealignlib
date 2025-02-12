@@ -25,6 +25,8 @@ are identified by a language (code), target and source IDs, and a path to the da
 
 from collections import UserDict
 
+# from typing import cast
+
 from .AlignmentGroup import AlignmentRecord
 from .AlignmentSet import AlignmentSet
 from .VerseData import VerseData
@@ -44,7 +46,7 @@ class Manager(UserDict):
 
     tokentypeattrs: set[str] = {"source", "target"}
     # the keys under self.bcv
-    bcvkeys: tuple[str] = ("sources", "targets", "target_sourceverses", "records", "versedata")
+    bcvkeys: tuple[str, ...] = ("sources", "targets", "target_sourceverses", "records", "versedata")
 
     def __init__(
         self,
@@ -72,13 +74,15 @@ class Manager(UserDict):
         self.sourceitems: SourceReader = self.read_sources()
         self.targetitems: TargetReader = self.read_targets()
         # several sets of data, all grouped by BCV
-        self.bcv = {
+        # this approach causes mypy complaints: might be better to rethink
+        self.bcv: dict[str, dict[str, list[str]]] = {
             # The source and target token readers with the TSV data
             "sources": groupby_bcv(list(self.sourceitems.values())),
             "targets": groupby_bcv(list(self.targetitems.values())),
             # by source_verse attribute: this should coordinate with source
             "target_sourceverses": groupby_bcv(
-                list(self.targetitems.values()), bcvfn=lambda t: t.source_verse
+                list(self.targetitems.values()),
+                bcvfn=lambda t: t.source_verse,
             ),
         }
         # The cleaned AlignmentRecords are in
@@ -91,13 +95,15 @@ class Manager(UserDict):
         )
         self.alignmentsreader.clean_alignments(self.sourceitems, self.targetitems)
         # group records by BCV
-        self.bcv["records"]: dict[str, AlignmentRecord] = groupby_bcv(
+        self.bcv["records"] = groupby_bcv(
             list(self.alignmentsreader.alignmentgroup.records), lambda r: r.source_bcv
         )
         # and make VerseData instances
-        self.data = self.bcv["versedata"] = {
+        versedata: dict[str, VerseData] = {
             bcvid: self.make_versedata(bcvid) for bcvid in self.bcv["records"]
         }
+        self.bcv["versedata"] = versedata
+        self.data = self.bcv["versedata"]
         self.check_integrity()
 
     def __repr__(self) -> str:
@@ -133,8 +139,8 @@ class Manager(UserDict):
             bcvid=bcvid,
             alignments=alinstpairs,
             records=tuple(self.bcv["records"][bcvid]),
-            sources=self.bcv["sources"].get(bcvid, []),
-            targets=self.bcv["targets"].get(bcvid, []),
+            sources=self.bcv["sources"].get(bcvid) or [],
+            targets=self.bcv["targets"].get(bcvid) or [],
         )
 
     def display_record(self, record: AlignmentRecord) -> str:
@@ -162,7 +168,7 @@ class Manager(UserDict):
 
     def token_alignments(
         self, term: str, role: str = "source", tokenattr: str = "text", lowercase: bool = False
-    ) -> list[Source | Target]:
+    ) -> list[AlignmentRecord]:
         """Return a list of alignments whose role tokens contain term."""
         itemreader: SourceReader | TargetReader = (
             self.sourceitems if role == "source" else self.targetitems
@@ -176,7 +182,7 @@ class Manager(UserDict):
         selectorattr = "source_selectors" if role == "source" else "target_selectors"
         token_records = [
             rec
-            for rec in self.alignmentgroup.records
+            for rec in self.alignmentsreader.alignmentgroup.records
             if selectorset.intersection(getattr(rec, selectorattr))
         ]
         return token_records
