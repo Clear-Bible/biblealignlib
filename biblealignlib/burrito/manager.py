@@ -119,11 +119,19 @@ class Manager(UserDict):
         # may need more single-name target files
         return TargetReader(self.alignmentset.targetpath, keepwordpart=self.keeptargetwordpart)
 
-    def make_versedata(self, bcvid: str) -> VerseData:
+    def make_versedata(
+        self, bcvid: str, verserecords: dict[str, list[AlignmentRecord]] = {}
+    ) -> VerseData:
         """Return a VerseData instance for a BCV reference."""
+        if not verserecords:
+            # type complaint here that's not easily fixed because of the "bcv" dict
+            verserecords = self.bcv["records"]
+        # this should not happen
+        if bcvid not in verserecords:
+            raise ValueError(f"BCV {bcvid} not found in records")
         alpairs: list[tuple[list[str], list[str]]] = [
             (ardict["source"], ardict["target"])
-            for ar in self.bcv["records"][bcvid]
+            for ar in verserecords[bcvid]
             # internal so omit macula prefix
             if (ardict := ar.asdict(withmaculaprefix=False))
         ]
