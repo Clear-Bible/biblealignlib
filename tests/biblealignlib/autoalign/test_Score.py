@@ -41,6 +41,11 @@ class TestMetrics:
         assert round(Score.f1(0.8, 0.9), 2) == 0.85
         assert Score.f1(0, 0) == 0.0
 
+    # def test_mcc(self) -> None:
+    #     assert round(Score.mcc(80, 20, 40, 0), 2) == 0.73
+    #     # denom = (80 + 20) * (80 + 40) * (0 + 20) * (0 + 40)
+    #     assert Score.mcc(0, 0) == 0.0
+
 
 class Test_BaseScore:
 
@@ -52,6 +57,7 @@ class Test_BaseScore:
         assert round(bs.recall, 2) == 0.67
         assert round(bs.f1, 2) == 0.73
         assert round(bs.aer, 2) == 0.2
+        # assert round(bs.mcc, 2) == 0.47
 
 
 # class TestVerseScore:
