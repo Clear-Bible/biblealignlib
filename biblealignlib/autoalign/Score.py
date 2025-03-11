@@ -23,19 +23,39 @@ def f1(recall: float, precision: float) -> float:
     return ((2 * precision * recall) / denom) if denom else 0
 
 
+# # not sure this is right
+# def mcc(
+#     true_positives: int, false_positives: int, false_negatives: int, true_negatives: int
+# ) -> float:
+#     denom = (
+#         (true_positives + false_positives)
+#         * (true_positives + false_negatives)
+#         * (true_negatives + false_positives)
+#         * (true_negatives + false_negatives)
+#     )
+#     return (
+#         ((true_positives * true_negatives) - (false_positives * false_negatives)) / denom
+#         if denom
+#         else 0.0
+#     )
+
+
 @dataclass
 class _BaseScore:
     """Manage base scoring metrics."""
 
     identifier: str = ""
     true_positives: int = 0
-    # true_negatives: int = 0
+    # always this value for alignment data?
+    true_negatives: int = 0
     false_positives: int = 0
     false_negatives: int = 0
     precision: float = 0.0
     recall: float = 0.0
     f1: float = 0.0
     aer: float = 0.0
+    # ranges from -1 to 1
+    # mcc: float = 0.0
 
     def __repr__(self) -> str:
         """Return a string representation of the Score."""
@@ -47,6 +67,12 @@ class _BaseScore:
         self.aer = 1 - self.precision
         self.recall = recall(self.true_positives, self.false_negatives)
         self.f1 = f1(self.recall, self.precision)
+        # self.mcc = mcc(
+        #     true_positives=self.true_positives,
+        #     false_positives=self.false_positives,
+        #     false_negatives=self.false_negatives,
+        #     true_negatives=self.true_negatives,
+        # )
 
     # should use summary_dict here
     def summary(self, width: int = 4, brief: bool = True) -> str:
