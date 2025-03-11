@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+## 0.1.13
+
+- bug fix for `burrito.manager.make_versedata`: `Scorer` needs to be
+  able to call it with an optional list of verse records.
 - rehabbed `mypy` configuration in pyproject.toml
 - stricter type checking and fixes for `burrito.manager`,
   `burrito.VerseData`, `util.merger`. 
