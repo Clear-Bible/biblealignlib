@@ -14,7 +14,7 @@ from .AlignmentGroup import AlignmentRecord
 
 
 class DiffReason(Enum):
-    """Enumerate constants for alignment differences.."""
+    """Enumerate constants for alignment differences."""
 
     DIFFLEN = "Different number of alignments"
     DIFFSOURCES = "Source selectors differ"
@@ -80,7 +80,7 @@ class VerseData:
         """Return a string representation."""
         return f"<VerseData: {self.bcvid}>"
 
-    def get_pairs(self, essential: bool=False) -> list[tuple[Source, Target]]:
+    def get_pairs(self, essential: bool = False) -> list[tuple[Source, Target]]:
         """Return pharaoh-style pairs of source and target tokens.
 
         Tokens are repeated as necessary in the sequence to express
@@ -205,7 +205,9 @@ class VerseData:
         return pd.DataFrame(dfdata, index=[getattr(src, srcattr) for src in self.sources])
 
     @staticmethod
-    def _diff_pair(bcvid: str, pair: tuple[tuple[list[Source], list[Target]], tuple[list[Source], list[Target]]]
+    def _diff_pair(
+        bcvid: str,
+        pair: tuple[tuple[list[Source], list[Target]], tuple[list[Source], list[Target]]],
     ) -> Optional[DiffRecord]:
         """Compare an alignment pair of Source and Target."""
         if pair[0] != pair[1]:
@@ -213,10 +215,12 @@ class VerseData:
             sources1, targets1 = pair[0]
             sources2, targets2 = pair[1]
             if sources1 != sources2:
-                return DiffRecord(bcvid=bcvid, diffreason=DiffReason.DIFFSOURCES, data=(sources1, sources2)
+                return DiffRecord(
+                    bcvid=bcvid, diffreason=DiffReason.DIFFSOURCES, data=(sources1, sources2)
                 )
             if targets1 != targets2:
-                return DiffRecord(bcvid=bcvid, diffreason=DiffReason.DIFFTARGETS, data=(targets1, targets2)
+                return DiffRecord(
+                    bcvid=bcvid, diffreason=DiffReason.DIFFTARGETS, data=(targets1, targets2)
                 )
         return None
 
