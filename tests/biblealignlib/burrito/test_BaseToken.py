@@ -10,7 +10,7 @@ import pytest
 from biblealignlib.burrito import BaseToken, asbool, bare_id
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mrk_4_9_4() -> BaseToken:
     """Return a BaseToken instance."""
     return BaseToken(id="410040090051", text="ὦτα", altId="ὦτα-1")

@@ -9,7 +9,7 @@ ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
 HINLANGDATAPATH = CLEARROOT / "alignments-hin/data"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def aset() -> AlignmentSet:
     """Return a AlignmentSet instance."""
     return AlignmentSet(
@@ -17,7 +17,7 @@ def aset() -> AlignmentSet:
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def asethin() -> AlignmentSet:
     """Return a AlignmentSet instance for IRVHin."""
     return AlignmentSet(

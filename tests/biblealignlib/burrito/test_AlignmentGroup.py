@@ -15,55 +15,55 @@ from biblealignlib.burrito import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def groupmeta() -> Metadata:
     """Return a Metadata instance."""
     return Metadata(creator="GrapeCity")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def recordmeta() -> Metadata:
     """Return a Metadata instance."""
     return Metadata(origin="manual", status="created", id="0708e5ff-2fd1-407b-97df-57f77f0d4a5f")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def document() -> Document:
     """Return a Document instance with default scheme."""
     return Document(docid="SBLGNT")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def documentwlcm() -> Document:
     """Return a Document instance with default scheme."""
     return Document(docid="WLCM")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def reference_sblgnt(document: Document) -> AlignmentReference:
     """Return a AlignmentReference instance for SBLGNT."""
     return AlignmentReference(document=document, selectors=["n41004003001", "n41004003002"])
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def reference_wlcm(documentwlcm: Document) -> AlignmentReference:
     """Return a AlignmentReference instance for SBLGNT."""
     return AlignmentReference(document=documentwlcm, selectors=["o01004003001", "o01004003002"])
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def reference_bsb(document: Document) -> AlignmentReference:
     """Return a AlignmentReference instance for BSB."""
     return AlignmentReference(document=Document(docid="BSB"), selectors=["410040030021"])
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def reference_bsb_ot(document: Document) -> AlignmentReference:
     """Return a AlignmentReference instance for BSB."""
     return AlignmentReference(document=Document(docid="BSB"), selectors=["010040030021"])
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def record(
     recordmeta: Metadata, reference_sblgnt: AlignmentReference, reference_bsb: AlignmentReference
 ) -> AlignmentRecord:
@@ -74,7 +74,7 @@ def record(
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def recordwlcm(
     recordmeta: Metadata, reference_wlcm: AlignmentReference, reference_bsb_ot: AlignmentReference
 ) -> AlignmentRecord:
@@ -85,7 +85,7 @@ def recordwlcm(
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def group(groupmeta: Metadata, record: AlignmentRecord) -> AlignmentGroup:
     """Return a AlignmentGroup instance."""
     return AlignmentGroup(
@@ -97,7 +97,7 @@ def group(groupmeta: Metadata, record: AlignmentRecord) -> AlignmentGroup:
 
 
 # empty case just for testing TopLevelGroups
-@pytest.fixture
+@pytest.fixture(scope="module")
 def groupwlcm(groupmeta: Metadata, recordwlcm: AlignmentRecord) -> AlignmentGroup:
     """Return a AlignmentGroup instance."""
     return AlignmentGroup(

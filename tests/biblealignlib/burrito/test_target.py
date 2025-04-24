@@ -11,7 +11,7 @@ from biblealignlib.burrito import CLEARROOT, Target, TargetReader
 ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mrk_4_9_6() -> Target:
     """Return a Target instance."""
     mrk_4_9_6_dict = {
@@ -29,7 +29,7 @@ def mrk_4_9_6() -> Target:
     return Target.fromjsondict(mrk_4_9_6_dict)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sparse_target() -> Target:
     """Return a Target instance with defaulted data."""
     mrk_4_9_6_dict = {

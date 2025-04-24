@@ -9,7 +9,7 @@ from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData
 ENGLANGDATAPATH = CLEARROOT / "Alignments/data/eng"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sblgntbsb() -> AlignmentSet:
     """Return a AlignmentSet instance."""
     return AlignmentSet(
@@ -21,7 +21,7 @@ def sblgntbsb() -> AlignmentSet:
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mgr(sblgntbsb: AlignmentSet) -> Manager:
     """Return a Manager instance."""
     mgr: Manager = Manager(sblgntbsb)

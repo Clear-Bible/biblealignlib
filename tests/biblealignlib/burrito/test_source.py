@@ -50,7 +50,7 @@ class TestMacula_Unprefixer:
         assert macula_unprefixer("41001001001") == "41001001001"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mrk_4_9_4() -> Source:
     """Return a Source instance."""
     mrk_4_9_4_dict = {
@@ -69,7 +69,7 @@ def mrk_4_9_4() -> Source:
     return Source.fromjsondict(mrk_4_9_4_dict)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def gen_1_1_1() -> Source:
     """Return a Source instance."""
     gen_1_1_1_dict = {
@@ -86,7 +86,7 @@ def gen_1_1_1() -> Source:
     return Source.fromjsondict(gen_1_1_1_dict)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def serialized() -> dict[str, str]:
     """Return a Source instance for data read from file."""
     return {

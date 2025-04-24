@@ -9,7 +9,7 @@ from biblealignlib.burrito import CLEARROOT, AlignmentSet, AlignmentsReader
 ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sblgntbsb() -> AlignmentSet:
     """Return a AlignmentSet instance."""
     return AlignmentSet(
@@ -21,7 +21,7 @@ def sblgntbsb() -> AlignmentSet:
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def alreader(sblgntbsb: AlignmentSet) -> AlignmentsReader:
     """Return a AlignmentsReader instance."""
     return AlignmentsReader(sblgntbsb)
