@@ -1,7 +1,7 @@
-"""Generate integrated data for interlinears/reverse-interlinears.
+"""Generate integrated data for interlinears/reverse-interlinears (as done for YWAM).
 
 >>> from biblealignlib.burrito import CLEARROOT, Manager, AlignmentSet
->>> from biblealignlib.interlinear.reverse import Reader
+>>> from biblealignlib.interlinear.reverse import Reader, Writer
 >>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
 >>> bsbas = AlignmentSet(targetlanguage=targetlang,
         targetid=targetid,
@@ -9,6 +9,9 @@
         langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
 >>> bsbmgr = Manager(bsbas)
 >>> rd = Reader(bsbmgr)
+# write it out
+>>> wr = Writer(rd)
+>>> wr.write(CLEARROOT / "alignments-eng/data/YWAM_share/NIV11" / "SBLGNT-NIV11-aligned.tsv")
 
 """
 

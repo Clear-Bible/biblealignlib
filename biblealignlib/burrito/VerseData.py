@@ -1,4 +1,31 @@
-"""Class for managing alignments and tokens at the verse level."""
+"""Class for managing alignments and tokens at the verse level.
+
+Given mgr, a Manager instance:
+
+>>> jhn20_20 = mgr["44020020"]
+>>> jhn20_20.display()
+------------
+Source: 44020020002: οὐδὲν		 (nothing, οὐδείς, adj)
+Target: 44020020006: না		 ('', False, False)
+------------
+Source: 44020020003: ὑπεστειλάμην		 (I did shrink back, ὑποστέλλω, verb)
+Target: 44020020003: কোনও		 ('', False, False)
+Target: 44020020004: কথা		 ('', False, False)
+Target: 44020020005: গোপন		 ('', False, False)
+------------
+Source: 44020020004: τῶν		 (of that, ὁ, det)
+Target: 44020020013: মধ্যে		 ('', False, False)
+------------
+Source: 44020020005: συμφερόντων		 (being profitable, συμφέρω, verb)
+Target: 44020020012: সাধারনের		 ('', False, False)
+------------
+Source: 44020020007: μὴ		 (not, μή, adv)
+Source: 44020020008: ἀναγγεῖλαι		 (to declare, ἀναγγέλλω, verb)
+Target: 44020020020: দ্বিধাবোধ		 ('', False, False)
+Target: 44020020021: করিনি		 ('', False, False)
+...
+
+"""
 
 from collections import Counter
 from dataclasses import dataclass
