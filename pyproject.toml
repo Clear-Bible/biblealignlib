@@ -32,6 +32,8 @@ regex = "^2024.11.6"
 python-dotenv = "^1.0.1"
 jupyter-server-ydoc = "^1.1.0"
 altair = "^5.5.0"
+jupyter-ai = "^2.31.6"
+langchain-openai = "^0.3.33"
 
 
 [tool.poetry.group.dev.dependencies]
