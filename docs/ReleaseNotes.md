@@ -1,12 +1,20 @@
 # Release Notes
 
+## 0.1.16
+
+- **Enhanced Testing**: Added comprehensive test suite for BadRecord
+  detection covering all 8 error types (NOSOURCE, EMPTYSOURCE, NOTARGET,
+  EMPTYTARGET, MISSINGSOURCE, MISSINGTARGETSOME, MISSINGTARGETALL,
+  ALIGNEDEXCLUDE) plus tests for valid records, repr/display formatting,
+  and multi-token alignments.
+
+
 ## 0.1.15
 
 - **Python 3.13 Support**: Updated Python version constraint to support
   Python 3.10-3.13. Updated development dependencies (mypy 1.0+, pytest
   8.0+, pre-commit 4.0+, tox 4.0+) and documentation dependencies (mkdocs
   1.6+, mkdocs-material 9.0+) for compatibility.
-
 ## 0.1.14
 
 - **New Documentation**: Added comprehensive documentation for the
