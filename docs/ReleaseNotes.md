@@ -3,10 +3,11 @@
 ## 0.1.16
 
 - **Enhanced Testing**: Added comprehensive test suite for BadRecord
-  detection covering all 8 error types (NOSOURCE, EMPTYSOURCE, NOTARGET,
-  EMPTYTARGET, MISSINGSOURCE, MISSINGTARGETSOME, MISSINGTARGETALL,
-  ALIGNEDEXCLUDE) plus tests for valid records, repr/display formatting,
-  and multi-token alignments.
+  detection in new `tests/biblealignlib/burrito/test_BadRecord.py` file,
+  covering all 8 error types (NOSOURCE, EMPTYSOURCE, NOTARGET, EMPTYTARGET,
+  MISSINGSOURCE, MISSINGTARGETSOME, MISSINGTARGETALL, ALIGNEDEXCLUDE) plus
+  tests for valid records, repr/display formatting, and multi-token alignments.
+  Reorganized tests to follow module structure conventions (12 new tests).
 
 
 ## 0.1.15
