@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "biblealignlib"
-version = "0.1.13"
+version = "0.1.14"
 description = "Code for managing Word-level alignments for Bibles, including both automatic alignments and manually corrected alignments."
 authors = ["Sean Boisen <sean.boisen@biblica.com>"]
 license = "MIT"
@@ -19,10 +19,14 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Topic :: Religion",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.10,<3.14"
 unicodecsv = "^0.14.1"
 jupyterlab = "^4.3.3"
 biblelib = "^0.3.18"
@@ -38,15 +42,15 @@ langchain-openai = "^0.3.33"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.10.0"
-pytest = "^7.2.0"
+pytest = "^8.0"
 pytest-cov = "^4.0.0"
-mypy = "^0.981"
-pre-commit = "^2.20.0"
-tox = "^3.25.1"
+mypy = "^1.0"
+pre-commit = "^4.0"
+tox = "^4.0"
 
 [tool.poetry.group.docs.dependencies]
-mkdocs = "^1.4.2"
-mkdocs-material = "^8.5.10"
+mkdocs = "^1.6"
+mkdocs-material = "^9.0"
 mkdocstrings = {extras = ["python"], version = "^0.19.0"}
 
 [build-system]
@@ -55,7 +59,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 100
-target-version = ['py39']
+target-version = ['py310', 'py311', 'py312', 'py313']
 preview = true
 
 [tool.isort]
