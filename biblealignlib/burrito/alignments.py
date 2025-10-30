@@ -51,18 +51,19 @@ def bad_reason(
         return BadRecord(**badrecdict, reason=Reason.NOTARGET)
     elif "" in arecdict["target"]:
         return BadRecord(**badrecdict, reason=Reason.EMPTYTARGET)
-    elif any(targetitems[sel].exclude for sel in arecdict["target"]):
-        excluded = [sel for sel in arecdict["target"] if targetitems[sel].exclude]
-        return BadRecord(**badrecdict, reason=Reason.ALIGNEDEXCLUDE, data=excluded)
-    elif any([(sel not in sourceitems) for sel in arecdict["source"]]):
-        missing = [sel for sel in arecdict["source"] if sel not in sourceitems]
-        return BadRecord(**badrecdict, reason=Reason.MISSINGSOURCE, data=missing)
     elif any([(sel not in targetitems) for sel in arecdict["target"]]):
         missing = [sel for sel in arecdict["target"] if sel not in targetitems]
         if set(arecdict["target"]).symmetric_difference(set(missing)):
             return BadRecord(**badrecdict, reason=Reason.MISSINGTARGETSOME, data=missing)
         else:
             return BadRecord(**badrecdict, reason=Reason.MISSINGTARGETALL, data=missing)
+    # this must follow the check for missing targets
+    elif any((targetitems[sel] and targetitems[sel].exclude) for sel in arecdict["target"]):
+        excluded = [sel for sel in arecdict["target"] if targetitems[sel].exclude]
+        return BadRecord(**badrecdict, reason=Reason.ALIGNEDEXCLUDE, data=excluded)
+    elif any([(sel not in sourceitems) for sel in arecdict["source"]]):
+        missing = [sel for sel in arecdict["source"] if sel not in sourceitems]
+        return BadRecord(**badrecdict, reason=Reason.MISSINGSOURCE, data=missing)
     else:
         return None
 
