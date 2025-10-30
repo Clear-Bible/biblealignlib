@@ -1,6 +1,28 @@
 # Release Notes
 
-## UNRELEASED
+## 0.1.15
+
+- **Python 3.13 Support**: Updated Python version constraint to support
+  Python 3.10-3.13. Updated development dependencies (mypy 1.0+, pytest
+  8.0+, pre-commit 4.0+, tox 4.0+) and documentation dependencies (mkdocs
+  1.6+, mkdocs-material 9.0+) for compatibility.
+
+## 0.1.14
+
+- **New Documentation**: Added comprehensive documentation for the
+  burrito module in `docs/burrito.md` covering core concepts, all key
+  classes, common workflows, and API reference with extensive code
+  examples.
+- **New CLAUDE.md**: Added repository architecture guide for Claude
+  Code with development commands, high-level code structure, core
+  abstractions, data flow diagrams, and coding conventions.
+- **Enhanced docstrings**: Added usage examples to
+  `burrito.VerseData` and `interlinear.reverse` modules for better
+  inline documentation.
+- **Dependencies**: Added `jupyter-ai` and `langchain-openai` to
+  support AI-enhanced Jupyter notebooks.
+- Convert test fixtures to `(scope="module")` (which is how i
+  _thought_ they worked): should make tests faster. 
 
 ## 0.1.13
 
