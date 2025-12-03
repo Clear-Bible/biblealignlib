@@ -35,6 +35,7 @@ from typing import Optional
 import pandas as pd
 
 
+from .BaseToken import BaseToken
 from .source import Source
 from .target import Target
 from .AlignmentGroup import AlignmentRecord
@@ -107,6 +108,18 @@ class VerseData:
         """Return a string representation."""
         return f"<VerseData: {self.bcvid}>"
 
+    @property
+    def unaligned_sources(self) -> list[Source]:
+        """Return list of unaligned source tokens."""
+        aligned_sources: set[Source] = {src for srcs, _ in self.alignments for src in srcs}
+        return [src for src in self.sources if src not in aligned_sources]
+
+    @property
+    def unaligned_targets(self) -> list[Target]:
+        """Return list of unaligned target tokens."""
+        aligned_targets: set[Target] = {trg for _, trgs in self.alignments for trg in trgs}
+        return [trg for trg in self.targets_included if trg not in aligned_targets]
+
     def get_pairs(self, essential: bool = False) -> list[tuple[Source, Target]]:
         """Return pharaoh-style pairs of source and target tokens.
 
@@ -138,6 +151,17 @@ class VerseData:
                     print(f"Source: {src._display}")
                 for trg in targets:
                     print(f"Target: {trg._display}")
+
+    def unaligned(self, typeattr: str = "targets", keepexcluded: bool = False) -> None:
+        """Display tokens from typeattr that are _not_ aligned."""
+        assert typeattr in self._typeattrs, f"typeattr should be one of {self._typeattrs}"
+        tokens: list[BaseToken] = getattr(self, typeattr)
+        if typeattr == "targets" and not keepexcluded:
+            tokens = self.targets_included
+        unaligned = self.unaligned_targets if typeattr == "targets" else self.unaligned_sources
+        for token in tokens:
+            if token in unaligned:
+                print(token._display)
 
     def table(self) -> None:
         """Display a tabbed table of alignments"""
