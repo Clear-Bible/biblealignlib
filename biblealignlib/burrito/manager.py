@@ -18,7 +18,7 @@ are identified by a language (code), target and source IDs, and a path to the da
 >>> mgr["40001024"]
 <VerseData: 40001024>
 
-# To upgrade older alignments to the latest sandard, see
+# To upgrade older alignments to the latest standard, see
 # src.check.Upgrader.write_alignment_group()
 
 """
