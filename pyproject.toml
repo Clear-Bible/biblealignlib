@@ -29,7 +29,6 @@ classifiers = [
 python = ">=3.10,<3.14"
 unicodecsv = "^0.14.1"
 jupyterlab = "^4.3.3"
-biblelib = "^0.3.18"
 pandas = "^2.2.3"
 regex = "^2024.11.6"
 # eflomal = {url = "https://github.com/jacobwegner/eflomal/archive/9a2f4a789b4abdaf5b572aa98766efeb13c65ba8.zip", optional = true}
@@ -38,6 +37,7 @@ jupyter-server-ydoc = "^1.1.0"
 altair = "^5.5.0"
 jupyter-ai = "^2.31.6"
 langchain-openai = "^0.3.33"
+biblelib = "0.3.28"
 
 
 [tool.poetry.group.dev.dependencies]
