@@ -1,5 +1,25 @@
 # Release Notes
 
+## 0.1.17
+
+- **Unaligned Token Retrieval**: Added methods to `burrito.VerseData` for
+  identifying and displaying tokens without alignments:
+  - `unaligned_sources` property: Returns list of source tokens that are not
+    aligned to any target tokens
+  - `unaligned_targets` property: Returns list of target tokens (excluding
+    those marked as excluded) that are not aligned to any source tokens
+  - `unaligned()` method: Display unaligned tokens for a given type
+    (sources or targets) with optional control over excluded targets
+  These enhancements improve the ability to inspect alignment coverage and
+  identify gaps within a verse.
+- **Enhanced Testing**: Added comprehensive test suite for `burrito.VerseData`
+  in new `tests/biblealignlib/burrito/test_VerseData.py` file, covering
+  initialization, representation, unaligned token detection (sources and
+  targets), text retrieval methods (`get_texts()`, `get_pairs()`), and edge
+  cases with excluded targets (15 new tests).
+- **Dependencies**: Updated `biblelib` to version 0.3.28 (from
+  ^0.3.18) for improved connection checking and a bug fix.
+
 ## 0.1.16
 
 - **Enhanced Testing**: Added comprehensive test suite for BadRecord
