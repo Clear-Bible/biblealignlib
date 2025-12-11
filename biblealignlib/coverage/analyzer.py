@@ -77,6 +77,7 @@ class CoverageAnalyzer:
         self.source_filter = get_source_filter(filter_type)
         self.target_filter = get_target_filter(filter_type)
         self.source_token_counts: dict[str, int] = self.manager.sourceitems.book_token_counts()
+        self.book_verse_counts: dict[str, int] = self.manager.sourceitems.book_verse_counts()
 
         # Cache for computed coverages
         self._verse_cache: dict[str, VerseCoverage] = {}
@@ -200,6 +201,7 @@ class CoverageAnalyzer:
             book_id=book_id,
             verse_coverages=verse_coverages,
             source_token_count=self.source_token_counts.get(book_id, 0),
+            verse_count=self.book_verse_counts.get(book_id, 0),
         )
 
         # Cache and return
