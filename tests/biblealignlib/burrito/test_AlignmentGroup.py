@@ -3,6 +3,8 @@
 Does not test writing files.
 """
 
+import copy
+
 import pytest
 
 from biblealignlib.burrito import (
@@ -220,6 +222,22 @@ class TestAlignmentRecord:
         """Test source_selectors and source_bcv."""
         assert record.source_selectors == ["n41004003001", "n41004003002"]
         assert record.source_bcv == "41004003"
+
+    def test_selectors(self, record: AlignmentRecord) -> None:
+        assert record.selectors == (["n41004003001", "n41004003002"], ["410040030021"])
+
+    def test_equality(
+        self, recordmeta: Metadata, reference_bsb: AlignmentReference, record: AlignmentRecord
+    ) -> None:
+        assert record == record
+        samerecord = copy.deepcopy(record)
+        samerecord.meta.origin = "edited"
+        # should still be equal: metadata is not part of equality
+        assert record == samerecord
+        diffrec = copy.deepcopy(record)
+        # changing selectors should make them unequal
+        diffrec.references["source"].selectors.pop()
+        assert record != diffrec
 
     # broken now that the default for withmaculaprefix is False
     # def test_asdict_positional(self, record: AlignmentRecord) -> None:

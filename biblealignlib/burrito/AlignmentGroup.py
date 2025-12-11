@@ -207,11 +207,17 @@ class AlignmentRecord:
         """Return a hash value for the record."""
         return hash(self.identifier)
 
-    def __eq__(self, other):
-        assert isinstance(other, AlignmentRecord), f"Not an AlignmentRecord: {other}"
-        return self.source_selectors[0] == other.source_selectors[0]
+    def __eq__(self, other: Any) -> bool:
+        """Return True if this record equals other.
 
-    def __lt__(self, other):
+        Equality is based on both source and target selectors, but not
+        metadata.
+
+        """
+        assert isinstance(other, AlignmentRecord), f"Not an AlignmentRecord: {other}"
+        return self.selectors == other.selectors
+
+    def __lt__(self, other: "AlignmentRecord") -> bool:
         assert isinstance(other, AlignmentRecord), f"Not an AlignmentRecord: {other}"
         return self.source_selectors[0] < other.source_selectors[0]
 
@@ -239,6 +245,11 @@ class AlignmentRecord:
     def target_selectors(self) -> list[str]:
         """Return the target selectors for this record."""
         return self.get_selectors("target")
+
+    @property
+    def selectors(self) -> tuple[list[str], list[str]]:
+        """Return a tuple of source and target selectors for this record."""
+        return (self.get_selectors("source"), self.get_selectors("target"))
 
     @property
     def source_bcv(self) -> str:
