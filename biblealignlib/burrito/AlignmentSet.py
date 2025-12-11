@@ -139,7 +139,7 @@ class AlignmentSet:
     def comparable(self, other: "AlignmentSet") -> bool:
         """Compare two alignment sets and return True if they can be usefully compared."""
 
-        def compattr(attr) -> bool:
+        def compattr(attr: str) -> bool:
             selfvalue = getattr(self, attr)
             othervalue = getattr(other, attr)
             if selfvalue != othervalue:
