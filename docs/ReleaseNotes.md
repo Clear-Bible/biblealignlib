@@ -1,5 +1,39 @@
 # Release Notes
 
+## 0.2.0 - Added Coverage Package
+
+New package for assessing alignment coverage at token, verse, and book levels.
+
+**Components:**
+- **`CoverageAnalyzer`** - Main analysis engine with caching
+- **`CoverageFilter`** - Flexible filtering (ALL, CONTENT, NONEXCLUDED, CONTENT_NONEXCLUDED)
+- **`CoverageExporter`** - Export utilities for reports
+
+**Data Models:**
+- `TokenCoverage` - Individual token alignment status
+- `VerseCoverage` - Verse-level coverage statistics
+- `BookCoverage` - Book-level aggregated coverage with contextual metrics
+- `GroupCoverage` - Group/corpus-level coverage statistics
+
+**Export Formats:**
+- DataFrame (Pandas)
+- TSV (tab-separated values)
+- Summary reports (human-readable text)
+
+#### Enhanced Book-Level Metrics
+
+`BookCoverage` now provides contextual metrics distinguishing between verses with alignment data and the entire book:
+
+| Metric | Description |
+|--------|-------------|
+| `source_coverage_pct` | % of tokens aligned within verses that have alignment data |
+| `source_token_aligned_pct` | % of ALL tokens in the entire book that are aligned |
+| `verse_coverage_pct` | % of ALL verses in the book that have alignment data |
+| `verses_with_alignments` | Count of verses with alignment data vs. total verses |
+| `source_token_count` | Total source tokens in entire book |
+| `verse_count` | Total verses in book |
+
+
 ## 0.1.17
 
 - **Unaligned Token Retrieval**: Added methods to `burrito.VerseData` for
