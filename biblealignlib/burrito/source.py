@@ -401,6 +401,8 @@ class SourceReader(UserDict):
         """Return the book id for a BCV string."""
         return bcvwpid.BCVWPID(bcvwpid).to_bid
 
+    # this could move up to BaseToken to also include target tokens:
+    # but source tokens may be sufficient
     def _book_tokens(
         self, tokenattr: str = "text", lower: bool = False, is_content: bool = False
     ) -> dict[str, list[Source]]:
