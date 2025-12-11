@@ -395,7 +395,7 @@ class TopLevelGroups:
     groups: tuple[AlignmentGroup, AlignmentGroup]
     format: str = "alignment"
     version: str = "0.3.1"
-    sourcedocids: tuple[str, str] = ()
+    sourcedocids: tuple[str, str] | tuple[()] = ()
     targetdocid: str = ""
 
     def __post_init__(self) -> None:
