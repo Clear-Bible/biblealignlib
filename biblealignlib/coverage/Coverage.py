@@ -145,8 +145,14 @@ class BookCoverage:
         """Compute aggregates from verse coverages."""
         if self.verse_coverages:
             self.verses_with_alignments = len(self.verse_coverages)
+            assert (
+                self.verse_count >= self.verses_with_alignments
+            ), "Verse count less than verses with alignments"
             # Sum up all verse totals
             self.source_total = sum(v.source_total for v in self.verse_coverages)
+            assert (
+                self.source_token_count >= self.source_total
+            ), "Source token count less than total aligned tokens"
             self.source_aligned = sum(v.source_aligned for v in self.verse_coverages)
             self.source_unaligned = sum(v.source_unaligned for v in self.verse_coverages)
             self.target_total = sum(v.target_total for v in self.verse_coverages)
@@ -155,7 +161,7 @@ class BookCoverage:
 
             # Compute percentages
             self.source_token_aligned_pct = (
-                self.source_total / self.source_token_count * 100
+                self.source_aligned / self.source_token_count * 100
                 if self.source_token_count
                 else 0.0
             )
@@ -177,6 +183,7 @@ class BookCoverage:
         """Return human-readable summary."""
         return (
             f"Book {self.book_id}: "
+            f"Verses={self.verses_with_alignments}/{self.verse_count} ({self.verse_coverage_pct:.1f}%) "
             f"S={self.source_aligned}/{self.source_total} ({self.source_coverage_pct:.1f}%) "
             f"T={self.target_aligned}/{self.target_total} ({self.target_coverage_pct:.1f}%)"
         )
