@@ -41,7 +41,10 @@ class TokenCoverage:
 class VerseCoverage:
     """Coverage statistics for a single verse.
 
-    Tracks both source and target coverage separately.
+    Tracks both source and target coverage separately. Note this only
+    includes verses that have alignment data, which may be a subset of
+    all verses.
+
     """
 
     bcvid: str
@@ -120,6 +123,13 @@ class BookCoverage:
     verse_coverages: list[VerseCoverage] = field(default_factory=list)
     # how many tokens in the book (regardless of alignment)
     source_token_count: int = 0
+    # how many of the total are aligned
+    source_token_aligned_pct: float = 0.0
+    # how many verses in the book (regardless of alignment)
+    verse_count: int = 0
+    # how many of the verses have any alignments
+    verses_with_alignments: int = 0
+    verse_coverage_pct: float = 0.0
     # Aggregated source coverage
     source_total: int = 0
     source_aligned: int = 0
@@ -134,6 +144,7 @@ class BookCoverage:
     def __post_init__(self) -> None:
         """Compute aggregates from verse coverages."""
         if self.verse_coverages:
+            self.verses_with_alignments = len(self.verse_coverages)
             # Sum up all verse totals
             self.source_total = sum(v.source_total for v in self.verse_coverages)
             self.source_aligned = sum(v.source_aligned for v in self.verse_coverages)
@@ -143,6 +154,14 @@ class BookCoverage:
             self.target_unaligned = sum(v.target_unaligned for v in self.verse_coverages)
 
             # Compute percentages
+            self.source_token_aligned_pct = (
+                self.source_total / self.source_token_count * 100
+                if self.source_token_count
+                else 0.0
+            )
+            self.verse_coverage_pct = (
+                self.verses_with_alignments / self.verse_count * 100 if self.verse_count else 0.0
+            )
             self.source_coverage_pct = (
                 (self.source_aligned / self.source_total * 100) if self.source_total else 0.0
             )
@@ -166,7 +185,10 @@ class BookCoverage:
         """Return dict usable as DataFrame row."""
         return {
             "Book_ID": self.book_id,
+            "Verse_Count": self.verse_count,
+            "Verse_Coverage_Pct": round(self.verse_coverage_pct, ndigits),
             "Source_Tokens": self.source_token_count,
+            "Source_Token_Aligned_Pct": round(self.source_token_aligned_pct, ndigits),
             "Source_Total": self.source_total,
             "Source_Aligned": self.source_aligned,
             "Source_Unaligned": self.source_unaligned,
