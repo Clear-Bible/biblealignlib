@@ -98,7 +98,7 @@ class Manager(UserDict):
         self.bcv["records"] = groupby_bcv(
             list(self.alignmentsreader.alignmentgroup.records), lambda r: r.source_bcv
         )
-        # and make VerseData instances
+        # and make VerseData instances for alignments
         versedata: dict[str, VerseData] = {
             bcvid: self.make_versedata(bcvid) for bcvid in self.bcv["records"]
         }
