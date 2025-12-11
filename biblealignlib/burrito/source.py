@@ -302,6 +302,9 @@ class SourceReader(UserDict):
                 self.data[srctoken.tokenid] = srctoken
         # this assumes data is from a single canon: if that's not true, :-<
         self.canon = get_canonid(list(self.data.keys())[0])
+        # cache data
+        self._book_tokens_cache: dict[str, list[Source]] = {}
+        self._book_verse_counts_cache: dict[str, int] = {}
 
     def vocabulary(self, tokenattr: str = "text", lower: bool = False) -> list[str]:
         """Return the sorted set of attribute values for tokens.
@@ -401,8 +404,6 @@ class SourceReader(UserDict):
         """Return the book id for a BCV string."""
         return bcvwpid.BCVWPID(bcvwpid).to_bid
 
-    # this could move up to BaseToken to also include target tokens:
-    # but source tokens may be sufficient
     def _book_tokens(
         self, tokenattr: str = "text", lower: bool = False, is_content: bool = False
     ) -> dict[str, list[Source]]:
@@ -426,6 +427,10 @@ class SourceReader(UserDict):
             """Return a two-char book ID."""
             return src.to_bcv()[:2]
 
+        # return cached data if available
+        if self._book_tokens_cache:
+            return self._book_tokens_cache
+
         book_tokens: dict[str, list[Source]] = {
             k: list(g) for k, g in groupby(self.values(), to_bid)
         }
@@ -439,16 +444,17 @@ class SourceReader(UserDict):
             for bookid, tokens in book_tokens.items()
             if (tokenattrs := [tokenattrfn(tok) for tok in tokens])
         }
-        return book_attr_tokens
+        self._book_tokens_cache = book_attr_tokens
+        return self._book_tokens_cache
 
-    def book_token_counts(self, lower: bool = False, is_content: bool = False) -> dict[str, str]:
+    def book_token_counts(self, lower: bool = False, is_content: bool = False) -> dict[str, int]:
         """Return a count of source tokens for each book."""
         book_tokens = self._book_tokens(lower=lower, is_content=is_content)
         return {bookid: len(tokens) for bookid, tokens in book_tokens.items()}
 
     def book_type_counts(
         self, tokenattr: str = "text", lower: bool = False, is_content: bool = False
-    ) -> dict[str, str]:
+    ) -> dict[str, int]:
         """Return a count of source token types (vocabulary) for each book.
 
         The attribute used is 'text' by default: 'lemma' is another
@@ -481,6 +487,23 @@ class SourceReader(UserDict):
             bookid: len(set(tokenattrs)) for bookid, tokenattrs in book_tokens.items()
         }
         return book_type_counts
+
+    def book_verse_counts(self) -> dict[str, int]:
+        """Return a count of verses for each book."""
+        if self._book_verse_counts_cache:
+            return self._book_verse_counts_cache
+
+        book_verses: dict[str, set[str]] = {}
+        for token in self.values():
+            verseid = token.to_bcv()
+            bookid = verseid[:2]
+            if bookid not in book_verses:
+                book_verses[bookid] = set()
+            book_verses[bookid].add(verseid)
+        self._book_verse_counts_cache = {
+            bookid: len(verses) for bookid, verses in book_verses.items()
+        }
+        return self._book_verse_counts_cache
 
     # def vocabulary(self, tokenattr: str = "text", lower: bool = False) -> list[str]:
     #     """Return the sorted set of attribute values for tokens.
