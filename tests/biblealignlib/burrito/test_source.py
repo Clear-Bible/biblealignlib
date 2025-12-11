@@ -279,6 +279,11 @@ class TestSourceReader:
         bc = self.sr.book_token_counts()
         assert bc["41"] == 11286
 
+    def test_book_verse_counts(self) -> None:
+        """Test book_verse_counts()."""
+        bcv = self.sr.book_verse_counts()
+        assert bcv["41"] == 673
+
 
 class TestOTSourceReader:
     """Test SourceReader()."""
