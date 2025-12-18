@@ -29,41 +29,52 @@ class AlignedToken:
         else:
             return "<AlignedToken(no token)>"
 
-    #
+    # comparison methods for sorting
+    # self+target, other+target: compare targets
+    # self+target, other-target:
+    #    self+source, other+source: compare sources
+    #    self-source, other+source: compare self.target and other.source ids
+    #    other-source: should not happen
+    # self-target, other+target:
+    #    self+source, other+source: compare sources
+    #    self+source, other-source: compare self.source and other.target ids
+    #    self-source: should not happen
+
     def __lt__(self: "AlignedToken", other: "AlignedToken") -> bool:
-        if self.targettoken:
-            if other.targettoken:
-                return self.targettoken.id < other.targettoken.id
-            elif self.sourcetoken:
-                if other.sourcetoken:
-                    return self.sourcetoken.id < other.sourcetoken.id
-                else:
-                    return True
+        if self.targettoken and other.targettoken:
+            return self.targettoken < other.targettoken
+        elif self.targettoken and not other.targettoken:
+            if self.sourcetoken and other.sourcetoken:
+                return self.sourcetoken < other.sourcetoken
+            elif not self.sourcetoken and other.sourcetoken:
+                # how to sort this?
+                # lame hack: compare (incomparable) self.target and other.source
+                return self.targettoken.id < other.sourcetoken.id
+            elif not other.sourcetoken:
+                raise ValueError("Cannot compare: other has neither target nor source.")
             else:
-                return False
-        elif other.targettoken:
-            if self.sourcetoken:
-                if other.sourcetoken:
-                    return self.sourcetoken.id < other.sourcetoken.id
-                else:
-                    return True
-            elif other.sourcetoken:
-                return True
+                raise ValueError("Cannot compare: unknown error.")
+        elif not self.targettoken and other.targettoken:
+            if self.sourcetoken and other.sourcetoken:
+                return self.sourcetoken < other.sourcetoken
+            elif self.sourcetoken and not other.sourcetoken:
+                # how to sort this?
+                # lame hack: compare (incomparable) target and source IDs
+                return self.sourcetoken.id < other.targettoken.id
+            elif not self.sourcetoken:
+                raise ValueError("Cannot compare: self has neither target nor source.")
+            else:
+                raise ValueError("Cannot compare: unknown error.")
 
-    # def __gt__(self: "AlignedToken", other: "AlignedToken") -> bool:
-    #     if self.targettoken and other.targettoken:
-    #         return self.targettoken.id > other.targettoken.id
-    #     elif self.sourcetoken and other.sourcetoken:
-    #         return self.sourcetoken.id > other.sourcetoken.id
-    #     elif self.targettoken:
-    #         return True
-    #     else:
-    #         return False
-
-    #  __lt__(), __le__(), __gt__(), and __ge__()
+    def display(self) -> str:
+        """Return a (target, source) string of the tokens IDs."""
+        idstr = ""
+        idstr += f" {self.targettoken.id}" if self.targettoken else f" {'-' * 11}"
+        idstr += f" {self.sourcetoken.id}" if self.sourcetoken else f" {'-' * 11}"
+        return idstr
 
     def ids(self) -> str:
-        """Return a string of the IDs of the tokens."""
+        """Return a (source, target) string of the tokens IDs."""
         idstr = ""
         if self.sourcetoken:
             idstr = f"{self.sourcetoken.id}"
