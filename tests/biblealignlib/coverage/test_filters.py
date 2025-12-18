@@ -14,6 +14,7 @@ class TestCoverageFilter:
         """Test enum has expected values."""
         assert CoverageFilter.ALL.value == "all"
         assert CoverageFilter.CONTENT.value == "content"
+        # assert CoverageFilter.NAME.value == "name"
         assert CoverageFilter.NONEXCLUDED.value == "nonexcluded"
         assert CoverageFilter.CONTENT_NONEXCLUDED.value == "content_nonexcluded"
 
@@ -45,6 +46,14 @@ class TestSourceFilter:
 
         assert filter_fn(content_src) is True
         assert filter_fn(function_src) is False
+
+    # def test_name_filter(self) -> None:
+    #     """Test NAME filter only accepts names."""
+    #     filter_fn = get_source_filter(CoverageFilter.NAME)
+    #     name_src = Source(id="41004003003", pos="Name", text="John")
+    #     function_src = Source(id="41004003002", pos="prep", text="of")
+    #     assert filter_fn(name_src) is True
+    #     assert filter_fn(function_src) is False
 
     def test_nonexcluded_filter(self) -> None:
         """Test NONEXCLUDED filter accepts all sources."""
