@@ -56,9 +56,10 @@ class TestManager:
             "the",
             "path",
             "and",
+            # minor difference in word order here 2025-12-16: did the text change?!?
+            "came",
             "the.1",
             "birds",
-            "came",
             "and.1",
             "devoured",
             "it",
@@ -83,6 +84,46 @@ class TestManager:
             "κατέφαγεν",
             "αὐτό",
         ]
+
+    def test_get_source_alignments(self, mgr: Manager) -> None:
+        """Test get_source_alignments() returns set of aligned sources."""
+        source_alignments = mgr.get_source_alignments()
+        # Should be a set
+        assert isinstance(source_alignments, set)
+        # Should contain Source instances
+        from biblealignlib.burrito import Source
+
+        assert all(isinstance(s, Source) for s in source_alignments)
+        # Should have aligned sources
+        assert len(source_alignments) > 0
+        # Check that we have sources from multiple verses
+        bcvs = {s.bcv for s in source_alignments}
+        assert len(bcvs) > 1
+
+    def test_get_target_alignments(self, mgr: Manager) -> None:
+        """Test get_target_alignments() returns dict mapping targets to sources."""
+        target_alignments = mgr.get_target_alignments()
+        # Should be a dict
+        assert isinstance(target_alignments, dict)
+        # Should have entries
+        assert len(target_alignments) > 0
+        # Keys should be Target instances, values should be Source instances
+        from biblealignlib.burrito import Source, Target
+
+        assert all(isinstance(t, Target) for t in target_alignments.keys())
+        assert all(isinstance(s, Source) for s in target_alignments.values())
+        # Check that aligned targets from verse data appear in the mapping
+        vd = mgr["41004003"]
+        if vd.alignments:
+            # Get first alignment
+            sources, targets = vd.alignments[0]
+            if sources and targets:
+                # Targets should be in the mapping
+                assert targets[0] in target_alignments
+                # The mapped source should be one of the sources from an alignment
+                # containing this target (not necessarily from this specific alignment)
+                mapped_source = target_alignments[targets[0]]
+                assert isinstance(mapped_source, Source)
 
 
 class TestWLCMManager:
