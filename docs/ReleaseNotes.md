@@ -1,5 +1,42 @@
 # Release Notes
 
+## 0.2.1
+
+### Bug Fixes
+- **Corrected Strong's number prefix assignment** in `biblealignlib/burrito/source.py`
+
+### Enhancements
+
+#### Reverse Interlinear (`interlinear` package)
+- **Major Reader refactoring**:
+  - Now iterates over all target tokens (not just aligned ones) for more complete coverage
+  - Removed verse-level dictionary structure in favor of single `aligned_tokens` list
+  - Added `exclude` parameter to optionally filter excluded target tokens
+- **AlignedToken improvements**:
+  - Completely rewrote comparison logic (`__lt__`) for proper sorting of aligned and
+    unaligned tokens with comprehensive edge case handling
+  - Added `display()` method to show token IDs in (target, source) format
+
+#### Core Alignment Data Structures (`burrito` package)
+- **AlignmentRecord**: Added `target_bcv` property to complement existing `source_bcv`,
+  with refactored internal `_token_bcv()` helper method for both
+- **VerseData**: Clarified docstring to explicitly note that target BCVs may not match
+  source BCVs due to versification differences
+- **Manager**:
+  - Refactored `make_versedata()` to correctly assign target tokens based on actual
+    alignment records rather than BCV matching, fixing issues with versification
+    differences
+  - Added `get_source_alignments()` method to return set of aligned source tokens
+  - Added `get_target_alignments()` method to return target-to-source mapping
+- **TargetReader**: Added `get_target_sources()` method to return mapping from target
+  tokens to their corresponding source BCVs
+
+### Testing
+- **Enhanced Testing**: Added comprehensive test suite for the `interlinear` package
+  in new test files.
+- Updated existing tests to reflect API changes in `Manager`, `AlignmentGroup`,
+  `VerseData`, and `Source` classes
+
 ## 0.2.0 - Added Coverage Package
 
 New package for assessing alignment coverage at token, verse, and book levels.
