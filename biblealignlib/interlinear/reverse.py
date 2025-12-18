@@ -3,15 +3,15 @@
 >>> from biblealignlib.burrito import CLEARROOT, Manager, AlignmentSet
 >>> from biblealignlib.interlinear.reverse import Reader, Writer
 >>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
->>> bsbas = AlignmentSet(targetlanguage=targetlang,
+>>> alset = AlignmentSet(targetlanguage=targetlang,
         targetid=targetid,
         sourceid=sourceid,
         langdatapath=(CLEARROOT / f"alignments-{targetlang}/data"))
->>> bsbmgr = Manager(bsbas)
->>> rd = Reader(bsbmgr)
+>>> mgr = Manager(alset)
+>>> rd = Reader(mgr)
 # write it out
 >>> wr = Writer(rd)
->>> wr.write(CLEARROOT / "alignments-eng/data/YWAM_share/NIV11" / "SBLGNT-NIV11-aligned.tsv")
+>>> wr.write(CLEARROOT / f"alignments-{targetlang}/data/YWAM_share/NIV11" / f"{sourceid}-{targetid}-aligned.tsv")
 
 """
 
@@ -19,7 +19,7 @@ from collections import UserDict
 from csv import DictWriter
 from pathlib import Path
 
-from ..burrito import Manager, VerseData
+from ..burrito import Manager, Source, Target, VerseData, groupby_bcv
 
 from .token import AlignedToken
 
@@ -28,45 +28,47 @@ from .token import AlignedToken
 # the alignments. That would provide Louw-Nida numbers, subjref,
 # referent, etc.
 class Reader(UserDict):
-    """Read alignment data for creating reverse interlinear data."""
+    """Read alignment data for creating reverse interlinear data.
 
-    def __init__(self, mgr: Manager) -> None:
-        """Initialize an instance."""
+    # keys are BCVs, values are lists of AlignedToken objects, which
+    # only cover the aligned data (not the full set of tokens).
+    >>> rd["01001001"]
+    [<AlignedToken(targetid=01001001001, aligned)>, ...]
+
+    """
+
+    def __init__(self, mgr: Manager, exclude: bool = False) -> None:
+        """Initialize an instance.
+
+        With exclude = True (the default), exclude target tokens with exclude=True.
+        """
         super().__init__(self)
         self.mgr = mgr
-        self.aligned_sources: dict[str, set[str]] = {}
-        self.target_alignments: dict[str, dict[str, str]] = {}
-        # make a target-side dict of alignments
-        for bcv, vd in self.mgr.bcv["versedata"].items():
-            self.pairs: list[AlignedToken] = []
-            # limit type checker complaint to this one line
-            versedata: VerseData = vd
-            self.target_alignments[bcv] = {
-                target: source
-                for rec in versedata.records
-                for target in rec.target_selectors
-                for source in rec.source_selectors
-            }
-            self.aligned_sources[bcv] = set(self.target_alignments[bcv].values())
-            # now build the mapping for this verse
-            # but what to do with unaligned sources? somehow need to
-            # get them in sequence, even if no target
-            for target in versedata.targets:
-                if target.id in self.target_alignments[bcv]:
-                    sourcetoken = self.mgr.sourceitems[self.target_alignments[bcv][target.id]]
-                    altoken = AlignedToken(
-                        sourcetoken=sourcetoken, targettoken=target, aligned=True
-                    )
-                    self.pairs.append(altoken)
-                # add unaligned targets and sources
-                else:
-                    self.pairs.append(AlignedToken(targettoken=target))
-            for source in versedata.sources:
-                if source.id not in self.aligned_sources[bcv]:
-                    self.pairs.append(AlignedToken(sourcetoken=source))
-            # could sort here by target ID: but not sure how to get
-            # source tokens in a reasonable order
-            self.data[bcv] = sorted(self.pairs)
+        # RETHINK: just iterate through all the target tokens and
+        # build a big list of AlignedTokens
+        self.aligned_tokens: list[AlignedToken] = []
+        self.target_alignments = self.mgr.get_target_alignments()
+        # iterate over all target tokens that aren't excluded (not
+        # just aligned ones)
+        if exclude:
+            included_targets = [t for t in self.mgr.targetitems.values() if not t.exclude]
+        else:
+            included_targets = list(self.mgr.targetitems.values())
+        for target in included_targets:
+            if target in self.target_alignments:
+                source = self.target_alignments[target]
+                aligned_token = AlignedToken(targettoken=target, sourcetoken=source, aligned=True)
+                self.aligned_tokens.append(aligned_token)
+            else:
+                unaligned_token = AlignedToken(targettoken=target)
+                self.aligned_tokens.append(unaligned_token)
+        self.aligned_tokens.sort()
+        # then collect unaligned source tokens
+        self.source_alignments = self.mgr.get_source_alignments()
+        for source in self.mgr.sourceitems.values():
+            if source not in self.source_alignments:
+                unaligned_token = AlignedToken(sourcetoken=source)
+                self.aligned_tokens.append(unaligned_token)
 
 
 class Writer:
@@ -98,12 +100,12 @@ class Writer:
         """Write the reverse interlinear data to outpath."""
         # create the directory if it doesn't exist
         outpath.parent.mkdir(parents=True, exist_ok=True)
+        # should write a manifest here for posterity
         with outpath.open("w", encoding="utf-8") as outf:
             writer = DictWriter(
                 outf, delimiter="\t", fieldnames=self.fieldnames, extrasaction="raise"
             )
             writer.writeheader()
             # write the data
-            for bcv, tokenlist in self.reader.items():
-                for alignedtoken in tokenlist:
-                    writer.writerow(alignedtoken.asdict())
+            for alignedtoken in self.reader.aligned_tokens:
+                writer.writerow(alignedtoken.asdict())
