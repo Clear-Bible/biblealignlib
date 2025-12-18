@@ -218,13 +218,10 @@ class TestAlignmentRecord:
 
         assert alrec.incomplete
 
-    def test_source_values(self, record: AlignmentRecord) -> None:
-        """Test source_selectors and source_bcv."""
-        assert record.source_selectors == ["n41004003001", "n41004003002"]
-        assert record.source_bcv == "41004003"
-
     def test_selectors(self, record: AlignmentRecord) -> None:
         assert record.selectors == (["n41004003001", "n41004003002"], ["410040030021"])
+        assert record.source_bcv == "41004003"
+        assert record.target_bcv == "41004003"
 
     def test_equality(
         self, recordmeta: Metadata, reference_bsb: AlignmentReference, record: AlignmentRecord
