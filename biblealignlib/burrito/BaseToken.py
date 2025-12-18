@@ -32,6 +32,12 @@ class BaseToken:
         """Return a hash key."""
         return hash(self.id)
 
+    # subclasses override this
+    @property
+    def _display(self) -> str:
+        """Return a displayable string for key data."""
+        raise NotImplementedError
+
     @property
     def bcv(self) -> str:
         """Return the BCV-format verse reference for a token instance."""
@@ -69,7 +75,10 @@ class BaseToken:
 
     def _truthy_asbool(self, value: bool | str) -> bool:
         """Return a bool for truthy values."""
-        return bool(self._truthyre.match(value))
+        if isinstance(value, str):
+            return bool(self._truthyre.match(value))
+        else:
+            return bool(value)
 
 
 def asbool(value: bool | str) -> str:
@@ -77,7 +86,7 @@ def asbool(value: bool | str) -> str:
     return "y" if bool(value) else "n"
 
 
-def bare_id(identifier) -> str:
+def bare_id(identifier: str) -> str:
     """Strip any canon prefixes."""
     assert bcvwpid.is_bcvwpid(
         identifier
