@@ -1,4 +1,7 @@
-"""Test VerseData.py."""
+"""Test VerseData.py.
+
+Largely from Claude.
+"""
 
 import pytest
 
@@ -80,12 +83,12 @@ class TestVerseData:
     def test_unaligned_sources_with_gaps(self, mgr: Manager) -> None:
         """Test unaligned_sources detects sources not in any alignment."""
         # Test across multiple verses to find one with unaligned sources
-        found_unaligned = False
+        # found_unaligned = False
         for bcvid in list(mgr.keys())[:50]:  # Check first 50 verses
             vd: VerseData = mgr[bcvid]
             unaligned = vd.unaligned_sources
             if len(unaligned) > 0:
-                found_unaligned = True
+                # found_unaligned = True
                 # Verify the unaligned sources are truly unaligned
                 aligned_sources = {src for srcs, _ in vd.alignments for src in srcs}
                 for src in unaligned:
@@ -99,12 +102,12 @@ class TestVerseData:
     def test_unaligned_targets_with_gaps(self, mgr: Manager) -> None:
         """Test unaligned_targets detects targets not in any alignment."""
         # Test across multiple verses to find one with unaligned targets
-        found_unaligned = False
+        # found_unaligned = False
         for bcvid in list(mgr.keys())[:50]:  # Check first 50 verses
             vd: VerseData = mgr[bcvid]
             unaligned = vd.unaligned_targets
             if len(unaligned) > 0:
-                found_unaligned = True
+                # found_unaligned = True
                 # Verify the unaligned targets are truly unaligned
                 aligned_targets = {trg for _, trgs in vd.alignments for trg in trgs}
                 for trg in unaligned:
