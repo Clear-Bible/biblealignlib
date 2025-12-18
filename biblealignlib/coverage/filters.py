@@ -11,6 +11,8 @@ class CoverageFilter(str, Enum):
 
     ALL = "all"  # Count all tokens
     CONTENT = "content"  # Source: is_content only; Target: non-excluded
+    # this needs more work
+    # NAME = "name"  # Source: pos == 'Name'; Target: non-excluded
     NONEXCLUDED = "nonexcluded"  # Target: non-excluded only; Source: all
     CONTENT_NONEXCLUDED = "content_nonexcluded"  # Intersection of both
 
@@ -20,6 +22,7 @@ class CoverageFilter(str, Enum):
         return {
             "all": "All tokens (sources and targets)",
             "content": "Content words only (noun/verb/adj/adv sources, non-excluded targets)",
+            # "name": "Names only, with non-excluded targets",
             "nonexcluded": "Non-excluded targets only (all sources)",
             "content_nonexcluded": "Content sources and non-excluded targets",
         }[self.value]
@@ -34,6 +37,8 @@ def get_source_filter(filter_type: CoverageFilter) -> Callable[[Source], bool]:
         return lambda src: True
     elif filter_type in (CoverageFilter.CONTENT, CoverageFilter.CONTENT_NONEXCLUDED):
         return lambda src: src.is_content
+    # elif filter_type in (CoverageFilter.NAME):
+    #     return lambda src: src.pos == "Name"
     else:
         raise ValueError(f"Unknown filter type: {filter_type}")
 
@@ -47,6 +52,7 @@ def get_target_filter(filter_type: CoverageFilter) -> Callable[[Target], bool]:
         return lambda trg: True
     elif filter_type in (
         CoverageFilter.CONTENT,
+        # CoverageFilter.NAME,
         CoverageFilter.NONEXCLUDED,
         CoverageFilter.CONTENT_NONEXCLUDED,
     ):
