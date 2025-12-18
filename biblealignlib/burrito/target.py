@@ -20,7 +20,6 @@
 from collections import UserDict, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-import re
 from typing import Any, Callable, Optional
 from warnings import warn
 
@@ -137,7 +136,7 @@ class Target(BaseToken):
 
     def asdict(
         self,
-        fields: tuple[str] = _output_fields,
+        fields: tuple[str, ...] = _output_fields,
         omitfalse: bool = True,
         omittext: bool = False,
     ) -> dict[str, str]:
@@ -248,7 +247,7 @@ class TargetReader(UserDict):
         tokenlist: list[Target],
         outpath: Path,
         excludefn: Optional[Callable] = None,
-        fields: tuple[str] = (
+        fields: tuple[str, ...] = (
             "id",
             "source_verse",
             "text",
@@ -327,3 +326,7 @@ class TargetReader(UserDict):
         for trg in self.data.values():
             source_bcvs[trg.source_verse].append(trg)
         return source_bcvs
+
+    def get_target_sources(self) -> dict[str, str]:
+        """Return a mapping from target tokens to the corresponding source BCV."""
+        return {trg: trg.source_verse for trg in self.data.values()}
