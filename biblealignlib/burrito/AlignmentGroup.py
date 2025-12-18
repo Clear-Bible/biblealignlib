@@ -251,19 +251,32 @@ class AlignmentRecord:
         """Return a tuple of source and target selectors for this record."""
         return (self.get_selectors("source"), self.get_selectors("target"))
 
-    @property
-    def source_bcv(self) -> str:
-        """Return the source BCV identifier for this record.
+    def _token_bcv(self, selectorattr: str) -> str:
+        """Return the BCV identifier for a token selector, either source or target.
 
         Returns data for the first selector, though multiples should
         have the same BCV.
 
         """
-        if self.source_selectors:
-            firstbcv: str = [bcvwpid.to_bcv(sel) for sel in self.source_selectors][0]
+        assert selectorattr in (
+            "source_selectors",
+            "target_selectors",
+        ), f"Invalid selectorattr: {selectorattr}"
+        if getattr(self, selectorattr):
+            firstbcv: str = [bcvwpid.to_bcv(sel) for sel in getattr(self, selectorattr)][0]
             return firstbcv
         else:
             return ""
+
+    @property
+    def source_bcv(self) -> str:
+        """Return the source BCV identifier for this record."""
+        return self._token_bcv("source_selectors")
+
+    @property
+    def target_bcv(self) -> str:
+        """Return the target BCV identifier for this record."""
+        return self._token_bcv("target_selectors")
 
     @property
     def incomplete(self) -> bool:
@@ -280,11 +293,11 @@ class AlignmentRecord:
         single key is 'references', and the position is determined by
         the position of the roles.
 
-        With withmeta=False (the default), omits record-level
+        With withmeta=False (the default is True), omits record-level
         metadata: otherwise includes it.
 
-        With withmaculaprefix=True (the default), prefix source
-        references with 'o' or 'n' depending on canon.
+        With withmaculaprefix=True (the default is False), prefix
+        source references with 'o' or 'n' depending on canon.
 
         """
         recdict: dict[str, Any] = {}
