@@ -42,6 +42,7 @@ Book 42: S=8825/19208 (45.9%) T=12047/25537 (47.2%)
 >>> analyzer.write_tsv(outpath=alset.alignmentpath.parent / f"{alset.identifier}.coverage.tsv")
 >>>
 >>> # Apply content-only filter
+# 2025-12-15 sboisen: not sure this is working correctly yet
 >>> analyzer_content = CoverageAnalyzer(mgr, filter_type=CoverageFilter.CONTENT)
 >>> content_cov = analyzer_content.coverage_all()
 >>> print(content_cov.summary())
@@ -95,16 +96,12 @@ class CoverageAnalyzer:
         Returns:
             Tuple of (source_token_coverages, target_token_coverages)
         """
-        # Get aligned token sets from versedata
-        aligned_sources: set[Source] = {src for srcs, _ in versedata.alignments for src in srcs}
-        aligned_targets: set[Target] = {trg for _, trgs in versedata.alignments for trg in trgs}
-
         # Create TokenCoverage for sources
         source_coverages = [
             TokenCoverage(
                 token_id=src.id,
                 token=src,
-                is_aligned=(src in aligned_sources),
+                is_aligned=(src in versedata.aligned_sources),
                 should_count=self.source_filter(src),
             )
             for src in versedata.sources
@@ -115,7 +112,7 @@ class CoverageAnalyzer:
             TokenCoverage(
                 token_id=trg.id,
                 token=trg,
-                is_aligned=(trg in aligned_targets),
+                is_aligned=(trg in versedata.aligned_targets),
                 should_count=self.target_filter(trg),
             )
             for trg in versedata.targets
@@ -330,3 +327,59 @@ class CoverageAnalyzer:
         print(f"Unaligned {token_type} tokens in {bcvid}:")
         for tc in tokens:
             print(f"  {tc.token_id}: {tc.text}")
+
+
+# BLOCKED work in progress: see
+# https://github.com/Clear-Bible/biblealignlib/tree/main/notebooks/coverage
+# for analysis
+
+# class NameSimilarityAnalyzer(CoverageAnalyzer):
+#     """Analyze the similarity of aligned name tokens for a Manager instance.
+
+#     Similarity is computed using Levenshtein distance ratio for
+#     alignments that pass the filter: by default, this is source tokens
+#     whose part of speech == 'Name', only where the target is not
+#     excluded.
+
+#     """
+
+#     def __init__(self, manager: Manager, filter_type: CoverageFilter = CoverageFilter.NAME) -> None:
+#         """Initialize coverage analyzer.
+
+#         Args:
+#             manager: Manager instance with loaded alignment data
+#             filter_type: How to filter tokens (all, content, nonexcluded, etc.)
+#         """
+#         super().__init__(manager, filter_type)
+
+#     def _compute_token_coverage(
+#         self, versedata: VerseData
+#     ) -> tuple[list[TokenCoverage], list[TokenCoverage]]:
+#         """Compute token-level coverage for a verse.
+
+#         Returns:
+#             Tuple of (source_token_coverages, target_token_coverages)
+#         """
+#         # Create TokenCoverage for sources
+#         source_coverages = [
+#             TokenCoverage(
+#                 token_id=src.id,
+#                 token=src,
+#                 is_aligned=(src in versedata.aligned_sources),
+#                 should_count=self.source_filter(src),
+#             )
+#             for src in versedata.sources
+#         ]
+
+#         # Create TokenCoverage for targets (use targets_included for filtering)
+#         target_coverages = [
+#             TokenCoverage(
+#                 token_id=trg.id,
+#                 token=trg,
+#                 is_aligned=(trg in versedata.aligned_targets),
+#                 should_count=self.target_filter(trg),
+#             )
+#             for trg in versedata.targets
+#         ]
+
+#         return source_coverages, target_coverages
