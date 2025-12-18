@@ -87,6 +87,8 @@ class VerseData:
     """Manage alignments, sources, and targets for a verse.
 
     Verse references are from the source. In a few cases, that means
+    target BCV's won't match!
+
     """
 
     # unique identifier for book, chapter, and verse
@@ -96,7 +98,7 @@ class VerseData:
     sources: list[Source]
     # includes excluded tokens
     targets: list[Target]
-    # computed
+    # computed: omits excluded tokens
     targets_included: tuple[Target, ...] = ()
     _typeattrs = ["sources", "targets"]
 
@@ -109,16 +111,38 @@ class VerseData:
         return f"<VerseData: {self.bcvid}>"
 
     @property
+    def aligned_sources(self) -> list[Source]:
+        """Return list of aligned source tokens.
+
+        Note this checks tokens, not alignment records. If a token is
+        aligned in one instance but not in another, this will return
+        it.
+
+        """
+        aligned: set[Source] = {src for srcs, _ in self.alignments for src in srcs}
+        return [src for src in self.sources if src in aligned]
+
+    @property
     def unaligned_sources(self) -> list[Source]:
-        """Return list of unaligned source tokens."""
-        aligned_sources: set[Source] = {src for srcs, _ in self.alignments for src in srcs}
-        return [src for src in self.sources if src not in aligned_sources]
+        """Return list of unaligned source tokens.
+
+        Note this checks tokens, not alignment records. If a token is
+        aligned in one instance but not in another, this will not
+        return it.
+
+        """
+        return [src for src in self.sources if src not in self.aligned_sources]
+
+    @property
+    def aligned_targets(self) -> list[Source]:
+        """Return list of aligned target tokens that are not excluded."""
+        aligned: set[Target] = {trg for _, trgs in self.alignments for trg in trgs}
+        return [trg for trg in self.targets_included if trg in aligned]
 
     @property
     def unaligned_targets(self) -> list[Target]:
-        """Return list of unaligned target tokens."""
-        aligned_targets: set[Target] = {trg for _, trgs in self.alignments for trg in trgs}
-        return [trg for trg in self.targets_included if trg not in aligned_targets]
+        """Return list of unaligned target tokens that are not excluded."""
+        return [trg for trg in self.targets_included if trg not in self.aligned_targets]
 
     def get_pairs(self, essential: bool = False) -> list[tuple[Source, Target]]:
         """Return pharaoh-style pairs of source and target tokens.
@@ -155,7 +179,7 @@ class VerseData:
     def unaligned(self, typeattr: str = "targets", keepexcluded: bool = False) -> None:
         """Display tokens from typeattr that are _not_ aligned."""
         assert typeattr in self._typeattrs, f"typeattr should be one of {self._typeattrs}"
-        tokens: list[BaseToken] = getattr(self, typeattr)
+        tokens: tuple[BaseToken, ...] = getattr(self, typeattr)
         if typeattr == "targets" and not keepexcluded:
             tokens = self.targets_included
         unaligned = self.unaligned_targets if typeattr == "targets" else self.unaligned_sources
