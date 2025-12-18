@@ -155,11 +155,8 @@ class Source(BaseToken):
             if re.match(r"[AGH]", self.strong):
                 prefix = self.strong[0]
             else:
-                if is_nt:
-                    prefix = "G"
-                else:
-                    # but what about Aramaic? Assign for selected BCV?
-                    prefix = "G"
+                # WRONG for Aramaic. Assign for selected BCV?
+                prefix = "G" if is_nt else "H"
                 self.strong = prefix + self.strong
             try:
                 self.strong = normalize_strongs(self.strong, prefix=prefix)
@@ -303,7 +300,7 @@ class SourceReader(UserDict):
         # this assumes data is from a single canon: if that's not true, :-<
         self.canon = get_canonid(list(self.data.keys())[0])
         # cache data
-        self._book_tokens_cache: dict[str, list[Source]] = {}
+        self._book_tokens_cache: dict[str, list[str]] = {}
         self._book_verse_counts_cache: dict[str, int] = {}
 
     def vocabulary(self, tokenattr: str = "text", lower: bool = False) -> list[str]:
@@ -319,7 +316,7 @@ class SourceReader(UserDict):
             vocab = {getattr(stok, tokenattr) for stok in self.values()}
         return sorted(vocab)
 
-    def content_token_dict(self, lower: bool = True) -> dict[str, Source]:
+    def content_token_dict(self, lower: bool = True) -> dict[str, list[Source]]:
         """Return mapping from content text strings to token instances.
 
         If lower (default is True), text is lower-cases.
@@ -329,7 +326,7 @@ class SourceReader(UserDict):
         def token_lemma_lower(token: Source) -> str:
             return token.lemma.lower()
 
-        content_tokens = [tok for tok in self.sourceitems.values() if tok.is_content]
+        content_tokens = [tok for tok in self.values() if tok.is_content]
         return groupby_key(content_tokens, token_lemma_lower)
         # sorted_content = sorted(tok for tok in self.sourceitems.values() if tok.is_content)
         # return {k: list(g) for k, g in groupby(sorted_content, token_lemma_lower)}
@@ -400,13 +397,13 @@ class SourceReader(UserDict):
                     print(f"{posstr}\t{poscounts[counttype]}")
 
     @staticmethod
-    def _to_bid(bcvwpid: str) -> str:
+    def _to_bid(bcvid: str) -> str:
         """Return the book id for a BCV string."""
-        return bcvwpid.BCVWPID(bcvwpid).to_bid
+        return bcvwpid.BCVWPID(bcvid).to_bid
 
     def _book_tokens(
         self, tokenattr: str = "text", lower: bool = False, is_content: bool = False
-    ) -> dict[str, list[Source]]:
+    ) -> dict[str, list[str]]:
         """Return a list of tokens grouped by book.
 
         The attribute used is 'text' by default: 'lemma' is another
