@@ -41,7 +41,7 @@ def bad_reason(
     """
     # internally, we don't use macula prefixes (only on output)
     arecdict = arec.asdict(withmaculaprefix=False)
-    badrecdict = {"identifier": arec.identifier, "record": arec}
+    badrecdict: dict[str, Any] = {"identifier": arec.identifier, "record": arec}
     # these labels must match what's in BadRecord._reasons
     if not arecdict["source"]:
         return BadRecord(**badrecdict, reason=Reason.NOSOURCE)
@@ -54,16 +54,16 @@ def bad_reason(
     elif any([(sel not in targetitems) for sel in arecdict["target"]]):
         missing = [sel for sel in arecdict["target"] if sel not in targetitems]
         if set(arecdict["target"]).symmetric_difference(set(missing)):
-            return BadRecord(**badrecdict, reason=Reason.MISSINGTARGETSOME, data=missing)
+            return BadRecord(**badrecdict, reason=Reason.MISSINGTARGETSOME, data=tuple(missing))
         else:
-            return BadRecord(**badrecdict, reason=Reason.MISSINGTARGETALL, data=missing)
+            return BadRecord(**badrecdict, reason=Reason.MISSINGTARGETALL, data=tuple(missing))
     # this must follow the check for missing targets
     elif any((targetitems[sel] and targetitems[sel].exclude) for sel in arecdict["target"]):
         excluded = [sel for sel in arecdict["target"] if targetitems[sel].exclude]
-        return BadRecord(**badrecdict, reason=Reason.ALIGNEDEXCLUDE, data=excluded)
+        return BadRecord(**badrecdict, reason=Reason.ALIGNEDEXCLUDE, data=tuple(excluded))
     elif any([(sel not in sourceitems) for sel in arecdict["source"]]):
         missing = [sel for sel in arecdict["source"] if sel not in sourceitems]
-        return BadRecord(**badrecdict, reason=Reason.MISSINGSOURCE, data=missing)
+        return BadRecord(**badrecdict, reason=Reason.MISSINGSOURCE, data=tuple(missing))
     else:
         return None
 
@@ -224,7 +224,7 @@ class AlignmentsReader:
                         identifier=recid,
                         record=rec,
                         reason=reason,
-                        data=firstbad,
+                        data=tuple(firstbad),
                     )
                     self.badrecords[recid].append(badrec)
 
