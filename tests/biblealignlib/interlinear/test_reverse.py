@@ -99,11 +99,16 @@ class TestReader:
         target_alignments = mgr.get_target_alignments()
         assert isinstance(target_alignments, dict)
         assert len(target_alignments) > 0
-        # Keys should be Target instances, values should be Source instances
+        # Keys should be Target instances, values should be lists of Source instances
         from biblealignlib.burrito import Source, Target
 
         assert all(isinstance(t, Target) for t in target_alignments.keys())
-        assert all(isinstance(s, Source) for s in target_alignments.values())
+        assert all(isinstance(sources, list) for sources in target_alignments.values())
+        assert all(
+            isinstance(s, Source)
+            for sources in target_alignments.values()
+            for s in sources
+        )
         # Reader should use these alignments
         assert reader_with_exclude.target_alignments == target_alignments
 
