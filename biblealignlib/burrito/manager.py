@@ -24,8 +24,8 @@ are identified by a language (code), target and source IDs, and a path to the da
 """
 
 from collections import UserDict
-
 from typing import Any, TypedDict, Union
+from warnings import warn
 
 from .AlignmentGroup import AlignmentRecord
 from .AlignmentSet import AlignmentSet
@@ -199,7 +199,10 @@ class Manager(UserDict):
             print(f"{len(self.bcv['sources'])} BCV sources < {len(self.bcv['records'])} records.")
 
     def get_source_alignments(self) -> set[Source]:
-        """Return the set of sources that are aligned."""
+        """Return the set of sources that are aligned.
+
+        If there are duplicate source alignments, this only returns the last one.
+        """
         return {
             s
             for bcvid in self.bcv["versedata"]
@@ -208,17 +211,20 @@ class Manager(UserDict):
             for s in sources
         }
 
-    def get_target_alignments(self) -> dict[Target, Source]:
-        """Get the target-to-source alignment mapping for all aligned targets."""
-        return {
-            t: s
-            for bcvid in self.bcv["versedata"]
-            for al in self.bcv["versedata"][bcvid].alignments
-            if (sources := al[0])
-            if (targets := al[1])
-            for s in sources
-            for t in targets
-        }
+    def get_target_alignments(self) -> dict[Target, list[Source]]:
+        """Get the target-to-source alignment mapping for all aligned targets.
+
+        If there are duplicate target alignments, this only returns the last one.
+        """
+        trgaln: dict[Target, list[Source]] = {}
+        for bcvid in self.bcv["versedata"]:
+            for al in self.bcv["versedata"][bcvid].alignments:
+                for t in al[1]:
+                    if t in trgaln:
+                        warn(f"Duplicate alignment for {t}, overwriting {trgaln[t]}")
+                    # get the whole list of alingments for this target
+                    trgaln[t] = al[0]
+        return trgaln
 
     def token_alignments(
         self, term: str, role: str = "source", tokenattr: str = "text", lowercase: bool = False
