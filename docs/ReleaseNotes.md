@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.2.3
+
+* Drop `UserDict` subclassing for reverse.Reader: it wasn't used.
+* Added `unaligned_sourcebcv()` to `burrito.manager.Manager` to
+  identify chapters with unaligned verses.
+* Pulled test for manager with WLCM into its own file to speed up
+  basic NT testing.
+
+
 ## 0.2.2
 
 ### Bug Fixes
