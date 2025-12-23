@@ -94,14 +94,14 @@ class AlignmentsReader:
         self.keeptargetwordpart: bool = keeptargetwordpart
         self.keepbadrecords: bool = keepbadrecords
         # the configuration of alignment data
-        self.alignmentset: AlignmentSet = alignmentset
+        self.alignmentset = alignmentset
         # Document instances for AlignmentGroup
         self.sourcedoc: Document = Document(docid=self.alignmentset.sourceid, scheme=self.scheme)
         self.targetdoc: Document = Document(docid=self.alignmentset.targetid, scheme=self.scheme)
         # Read the data and instantiate an AlignmentGroup (with
         # AlignmentRecords, etc. all the way down)
         # dict of records where status = rejected
-        self.badrecords: Optional[dict[str, list[BadRecord]]] = defaultdict(list)
+        self.badrecords: dict[str, list[BadRecord]] = defaultdict(list)
         self.rejected: dict[str, AlignmentRecord] = {}
         self.alignmentgroup: AlignmentGroup = self.read_alignments(keeprejected=keeprejected)
         # can't do all the checking without sources, targets, etc. Use
@@ -165,7 +165,7 @@ class AlignmentsReader:
             agroupdict = json.load(f)
             if isinstance(agroupdict, list):
                 raise ValueError(
-                    f"{self.alignmentspath} should contain an object, not a list. Perhaps not converted to Burrito"
+                    f"{self.alignmentset.alignmentpath} should contain an object, not a list. Perhaps not converted to Burrito"
                     " format yet?"
                 )
             meta: Metadata = Metadata(**agroupdict["meta"])
@@ -206,7 +206,7 @@ class AlignmentsReader:
 
     def _clean_corpus(
         self,
-        records: dict[str, list[AlignmentRecord]],
+        records: dict[str, AlignmentRecord],
     ) -> None:
         """Check records across the corpus and add to self.badrecords.
 
