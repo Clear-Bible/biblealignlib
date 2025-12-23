@@ -139,7 +139,7 @@ class TestBadRecords:
         assert bad is not None
         assert bad.reason == Reason.MISSINGSOURCE
         assert bad.identifier == "test.005"
-        assert bad.data == ["40001001999"]
+        assert bad.data == ("40001001999",)
         assert "MISSINGSOURCE" in bad.display
         assert "40001001999" in bad.display
 
@@ -166,7 +166,7 @@ class TestBadRecords:
         assert bad is not None
         assert bad.reason == Reason.MISSINGTARGETSOME
         assert bad.identifier == "test.007"
-        assert bad.data == ["40001001999"]
+        assert bad.data == ("40001001999",)
         assert "MISSINGTARGETSOME" in bad.display
 
     def test_alignedexclude(
@@ -180,7 +180,7 @@ class TestBadRecords:
         assert bad is not None
         assert bad.reason == Reason.ALIGNEDEXCLUDE
         assert bad.identifier == "test.008"
-        assert bad.data == ["40001001003"]
+        assert bad.data == ("40001001003",)
         assert "ALIGNEDEXCLUDE" in bad.display
 
     def test_good_record(self, sample_sources: SourceReader, sample_targets: TargetReader) -> None:
@@ -201,7 +201,9 @@ class TestBadRecords:
 
         assert bad is None
 
-    def test_badrecord_repr(self, sample_sources: SourceReader, sample_targets: TargetReader) -> None:
+    def test_badrecord_repr(
+        self, sample_sources: SourceReader, sample_targets: TargetReader
+    ) -> None:
         """Test BadRecord __repr__ method."""
         rec = create_test_record("test.011", ["40001001999"], ["40001001001"])
         bad = bad_reason(rec, sample_sources, sample_targets)
