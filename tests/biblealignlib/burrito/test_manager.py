@@ -2,7 +2,7 @@
 
 import pytest
 
-from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData
+from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData, Source, Target
 
 # test published version
 # ENGLANGDATAPATH = DATAPATH / "eng"
@@ -100,18 +100,29 @@ class TestManager:
         bcvs = {s.bcv for s in source_alignments}
         assert len(bcvs) > 1
 
+        # check the actual SBLGNT-BSB alignments for MAT 1:1!8
+        assert mgr.sourceitems["40001001008"] in source_alignments  # Ἐν
+        assert mgr.sourceitems["40001002003"] not in source_alignments  # τὸν
+
+    # don't need to test for uniqueness separately since set guarantees that
+    # don't need to test that alignments are a subset: logic guarantees that
+
     def test_get_target_alignments(self, mgr: Manager) -> None:
-        """Test get_target_alignments() returns dict mapping targets to sources."""
+        """Test get_target_alignments() returns dict mapping targets to list of sources."""
         target_alignments = mgr.get_target_alignments()
         # Should be a dict
         assert isinstance(target_alignments, dict)
         # Should have entries
         assert len(target_alignments) > 0
-        # Keys should be Target instances, values should be Source instances
-        from biblealignlib.burrito import Source, Target
 
         assert all(isinstance(t, Target) for t in target_alignments.keys())
-        assert all(isinstance(s, Source) for s in target_alignments.values())
+        assert all(isinstance(sources, list) for sources in target_alignments.values())
+        assert all(
+            isinstance(s, Source)
+            for sourcelists in target_alignments.values()
+            for sources in sourcelists
+            for s in sources
+        )
         # Check that aligned targets from verse data appear in the mapping
         vd = mgr["41004003"]
         if vd.alignments:
@@ -120,10 +131,15 @@ class TestManager:
             if sources and targets:
                 # Targets should be in the mapping
                 assert targets[0] in target_alignments
-                # The mapped source should be one of the sources from an alignment
-                # containing this target (not necessarily from this specific alignment)
-                mapped_source = target_alignments[targets[0]]
-                assert isinstance(mapped_source, Source)
+                # The mapped sources should be a list
+                mapped_sources = target_alignments[targets[0]]
+                assert isinstance(mapped_sources, list)
+                assert len(mapped_sources) > 0
+                assert all(
+                    isinstance(s, Source) for sourcelists in mapped_sources for s in sourcelists
+                )
+
+    # dropped some other superfluous tests
 
 
 class TestWLCMManager:
