@@ -33,7 +33,7 @@ from .VerseData import VerseData
 from .alignments import AlignmentsReader
 from .source import Source, SourceReader
 from .target import Target, TargetReader
-from .util import groupby_bcv
+from .util import groupby_bcv, groupby_bcid
 
 
 class BCVData(TypedDict, total=False):
@@ -245,3 +245,10 @@ class Manager(UserDict):
             if selectorset.intersection(getattr(rec, selectorattr))
         ]
         return token_records
+
+    def unaligned_sourcebcv(self) -> dict[str, list[VerseData]]:
+        """Return a mapping of BCV IDs to VerseData for unaligned source BCVs."""
+        unaligned = [
+            sourcebcv for sourcebcv in self.bcv["sources"] if sourcebcv not in self.bcv["versedata"]
+        ]
+        return groupby_bcid(unaligned)
