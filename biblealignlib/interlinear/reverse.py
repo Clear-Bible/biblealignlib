@@ -47,7 +47,7 @@ class Reader(UserDict):
         # RETHINK: just iterate through all the target tokens and
         # build a big list of AlignedTokens
         self.aligned_tokens: list[AlignedToken] = []
-        self.target_alignments = self.mgr.get_target_alignments()
+        self.target_alignments: dict[Target, list[Source]] = self.mgr.get_target_alignments()
         # iterate over all target tokens that aren't excluded (not
         # just aligned ones)
         if exclude:
@@ -56,8 +56,11 @@ class Reader(UserDict):
             included_targets = list(self.mgr.targetitems.values())
         for target in included_targets:
             if target in self.target_alignments:
-                source = self.target_alignments[target]
-                aligned_token = AlignedToken(targettoken=target, sourcetoken=source, aligned=True)
+                sources = self.target_alignments[target]
+                for source in sources:
+                    aligned_token = AlignedToken(
+                        targettoken=target, sourcetoken=source, aligned=True
+                    )
                 self.aligned_tokens.append(aligned_token)
             else:
                 unaligned_token = AlignedToken(targettoken=target)
