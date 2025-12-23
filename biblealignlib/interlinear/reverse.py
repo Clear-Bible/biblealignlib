@@ -15,7 +15,7 @@
 
 """
 
-from collections import UserDict
+
 from csv import DictWriter
 from pathlib import Path
 
@@ -27,14 +27,13 @@ from .token import AlignedToken
 # this might should join in the full Macula data, not just what's in
 # the alignments. That would provide Louw-Nida numbers, subjref,
 # referent, etc.
-class Reader(UserDict):
+# this might should join in the full Macula data, not just what's in
+# the alignments. That would provide Louw-Nida numbers, subjref,
+# referent, etc.
+class Reader:
     """Read alignment data for creating reverse interlinear data.
 
-    # keys are BCVs, values are lists of AlignedToken objects, which
-    # only cover the aligned data (not the full set of tokens).
-    >>> rd["01001001"]
-    [<AlignedToken(targetid=01001001001, aligned)>, ...]
-
+    Exposes a list of AlignedToken objects via .aligned_tokens.
     """
 
     def __init__(self, mgr: Manager, exclude: bool = False) -> None:
@@ -42,7 +41,6 @@ class Reader(UserDict):
 
         With exclude = True (the default), exclude target tokens with exclude=True.
         """
-        super().__init__(self)
         self.mgr = mgr
         # RETHINK: just iterate through all the target tokens and
         # build a big list of AlignedTokens
