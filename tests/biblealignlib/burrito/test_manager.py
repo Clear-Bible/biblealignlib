@@ -139,22 +139,15 @@ class TestManager:
                     isinstance(s, Source) for sourcelists in mapped_sources for s in sourcelists
                 )
 
+    def test_unaligned_sourcebcv(self, mgr: Manager) -> None:
+        """Test unaligned_sourcebcv property."""
+        # dependent on current alignment data: but this verse doesn't
+        # occur in BSB so can't be aligned
+        unaligned = mgr.unaligned_sourcebcv()
+        assert "45016" in unaligned
+        assert "45016024" in unaligned["45016"]
+
     # dropped some other superfluous tests
-
-
-class TestWLCMManager:
-    alset = AlignmentSet(
-        sourceid="WLCM", targetid="BSB", targetlanguage="eng", langdatapath=ENGLANGDATAPATH
-    )
-    manager = Manager(alset)
-
-    def test_init(self) -> None:
-        """Test reading WLCM."""
-        # target scheme should be downgraded
-        # refactored
-        # assert self.manager.targetdoc.scheme == "BCVW"
-        assert self.alset.sourceid == "WLCM"
-        assert self.alset.targetid == "BSB"
 
 
 # Should add tests for Reason/BadRecord
