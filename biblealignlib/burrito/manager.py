@@ -24,7 +24,7 @@ are identified by a language (code), target and source IDs, and a path to the da
 """
 
 from collections import UserDict
-from typing import Any, TypedDict, Union
+from typing import TypedDict
 from warnings import warn
 
 from .AlignmentGroup import AlignmentRecord
@@ -211,19 +211,18 @@ class Manager(UserDict):
             for s in sources
         }
 
-    def get_target_alignments(self) -> dict[Target, list[Source]]:
-        """Get the target-to-source alignment mapping for all aligned targets.
-
-        If there are duplicate target alignments, this only returns the last one.
-        """
-        trgaln: dict[Target, list[Source]] = {}
+    def get_target_alignments(self) -> dict[Target, list[list[Source]]]:
+        """Get a mapping from target tokens to all their alignments for all aligned targets."""
+        trgaln: dict[Target, list[list[Source]]] = {}
         for bcvid in self.bcv["versedata"]:
             for al in self.bcv["versedata"][bcvid].alignments:
                 for t in al[1]:
-                    if t in trgaln:
-                        warn(f"Duplicate alignment for {t}, overwriting {trgaln[t]}")
+                    if t not in trgaln:
+                        trgaln[t] = []
+                    else:
+                        warn(f"Warning: duplicate alignment for {t}\n overwriting {trgaln[t]}")
                     # get the whole list of alingments for this target
-                    trgaln[t] = al[0]
+                    trgaln[t].append(al[0])
         return trgaln
 
     def token_alignments(
