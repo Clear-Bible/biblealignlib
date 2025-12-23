@@ -134,7 +134,7 @@ class VerseData:
         return [src for src in self.sources if src not in self.aligned_sources]
 
     @property
-    def aligned_targets(self) -> list[Source]:
+    def aligned_targets(self) -> list[Target]:
         """Return list of aligned target tokens that are not excluded."""
         aligned: set[Target] = {trg for _, trgs in self.alignments for trg in trgs}
         return [trg for trg in self.targets_included if trg in aligned]
