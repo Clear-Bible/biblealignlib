@@ -2,6 +2,24 @@
 
 ## 0.2.2
 
+### Bug Fixes
+- **Fixed type hint** for `VerseData.aligned_targets` property (was `list[Source]`, now correctly `list[Target]`)
+- **Fixed error message** in `AlignmentsReader` to reference correct attribute name
+- **Type safety improvements** in `SourceReader` with explicit string conversions and `BadRecord` with tuple conversions
+
+### Enhancements
+- **Manager**: Added alignment helper methods moved from `Reader`:
+  - `get_source_alignments()` returns `set[Source]` of all aligned sources
+  - `get_target_alignments()` returns `dict[Target, list[list[Source]]]` supporting many-to-many alignments with warnings for duplicates
+  - Fixed TypedDict for `self.bcv` to accurately represent heterogeneous structure
+  - Removed unused imports (`Any`, `Union`)
+- **VerseData**: Added `get_source_alignments(source)` method to retrieve targets aligned to a specific source
+- **Reader**: Updated to handle nested alignment lists, creating `AlignedToken` for each source in each alignment group
+- **AlignmentsReader**: Simplified type hints by removing unnecessary `Optional` wrappers
+
+### Testing
+- Added comprehensive test coverage for new alignment methods (9 tests)
+- Updated all tests to handle new `dict[Target, list[list[Source]]]` return type
 
 ## 0.2.1
 
