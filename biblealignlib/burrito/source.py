@@ -399,7 +399,7 @@ class SourceReader(UserDict):
     @staticmethod
     def _to_bid(bcvid: str) -> str:
         """Return the book id for a BCV string."""
-        return bcvwpid.BCVWPID(bcvid).to_bid
+        return str(bcvwpid.BCVWPID(bcvid).to_bid)
 
     def _book_tokens(
         self, tokenattr: str = "text", lower: bool = False, is_content: bool = False
@@ -418,7 +418,7 @@ class SourceReader(UserDict):
         """
 
         def tokenattrfn(tok: Source) -> str:
-            return getattr(tok, tokenattr).lower() if lower else getattr(tok, tokenattr)
+            return str(getattr(tok, tokenattr).lower() if lower else getattr(tok, tokenattr))
 
         def to_bid(src: Source) -> str:
             """Return a two-char book ID."""
