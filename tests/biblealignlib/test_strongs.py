@@ -45,3 +45,14 @@ class TestNormalizeStrongs:
         """Test cases with pipes."""
         # special cases
         assert normalize_strongs("1886j|2050b", "H") == "H2050b"
+
+    def test_strict(self) -> None:
+        """Test strict mode."""
+        # strict mode: empty code
+        with pytest.raises(ValueError):
+            assert normalize_strongs("H", strict=True)
+
+    def test_non_strict(self) -> None:
+        """Test non-strict mode."""
+        # non-strict mode: empty code
+        assert normalize_strongs("", prefix="H", strict=False) == ""
