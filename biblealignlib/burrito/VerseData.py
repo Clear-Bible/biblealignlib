@@ -87,7 +87,7 @@ class VerseData:
     """Manage alignments, sources, and targets for a verse.
 
     Verse references are from the source. In a few cases, that means
-    target BCV's won't match!
+    target BCV's won't match! So there are gotchas here.
 
     """
 
@@ -163,6 +163,10 @@ class VerseData:
         else:
             pairs = [(s, t) for src, trg in self.alignments for s in src for t in trg]
         return pairs
+
+    def get_source_alignments(self, source: Source) -> list[Target]:
+        """Return list of target tokens aligned to the given source token."""
+        return [trg for srcs, trgs in self.alignments if source in srcs for trg in trgs]
 
     def display(self, termsonly: bool = False) -> None:
         """Display the alignments in a readable view."""
