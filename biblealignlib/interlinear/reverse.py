@@ -123,5 +123,5 @@ class Writer:
             )
             writer.writeheader()
             # write the data
-            for alignedtoken in self.reader.aligned_tokens:
+            for alignedtoken in self.reader:
                 writer.writerow(alignedtoken.asdict())

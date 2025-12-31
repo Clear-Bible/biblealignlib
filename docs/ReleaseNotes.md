@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.2.5
+
+* Updated fix to ordering for `interlinear.reverse.Writer()`: now that
+  the aligned tokens are ordered, actually use them. 
+
 ## 0.2.4
 
 * fixed a bug in interlinear/reverse.py: aligned tokens weren't
