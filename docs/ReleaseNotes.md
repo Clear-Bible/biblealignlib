@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.2.4
+
+* fixed a bug in interlinear/reverse.py: aligned tokens weren't
+  sorted, so the TSV output by Writer wasn't correctly ordered.
+* `reverse.Reader` is now a `UserList`.
+* added included_targets as a class variable for `reverse.Reader`. 
+* added some comments on the output specification for `reverse.Writer`.
+* refactored strongs.py for better clarity and efficiency
+
 ## 0.2.3
 
 * Drop `UserDict` subclassing for reverse.Reader: it wasn't used.
