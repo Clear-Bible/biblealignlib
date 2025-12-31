@@ -1,5 +1,16 @@
 """Generate integrated data for interlinears/reverse-interlinears (as done for YWAM).
 
+The output spec for Writer():
+- TSV with one row for each target, in target order, with aligned source data where available.
+    - If a target is unaligned, it produces one row with empty source data.
+    - If a source is aligned with multiple targets, it appears multiple times.
+    - If a target is aligned with multiple sources, it produces multiple rows.
+    - Is a source is unaligned, it appears close in sequence to the
+      target with the same index. This may be imperfect.
+- The default is to include all target tokens, even those marked exclude=True (e.g. punctuation).
+- The output columns are defined by Writer().fieldnames
+
+
 >>> from biblealignlib.burrito import CLEARROOT, Manager, AlignmentSet
 >>> from biblealignlib.interlinear.reverse import Reader, Writer
 >>> targetlang, targetid, sourceid = ("eng", "BSB", "SBLGNT")
@@ -15,11 +26,11 @@
 
 """
 
-
+from collections import UserList
 from csv import DictWriter
 from pathlib import Path
 
-from ..burrito import Manager, Source, Target, VerseData, groupby_bcv
+from ..burrito import Manager, Source, Target
 
 from .token import AlignedToken
 
@@ -30,7 +41,7 @@ from .token import AlignedToken
 # this might should join in the full Macula data, not just what's in
 # the alignments. That would provide Louw-Nida numbers, subjref,
 # referent, etc.
-class Reader:
+class Reader(UserList):
     """Read alignment data for creating reverse interlinear data.
 
     Exposes a list of AlignedToken objects via .aligned_tokens.
@@ -39,8 +50,9 @@ class Reader:
     def __init__(self, mgr: Manager, exclude: bool = False) -> None:
         """Initialize an instance.
 
-        With exclude = True (the default), exclude target tokens with exclude=True.
+        With exclude = True (the default is False), exclude target tokens with exclude=True.
         """
+        super().__init__()
         self.mgr = mgr
         # RETHINK: just iterate through all the target tokens and
         # build a big list of AlignedTokens
@@ -49,10 +61,10 @@ class Reader:
         # iterate over all target tokens that aren't excluded (not
         # just aligned ones)
         if exclude:
-            included_targets = [t for t in self.mgr.targetitems.values() if not t.exclude]
+            self.included_targets = [t for t in self.mgr.targetitems.values() if not t.exclude]
         else:
-            included_targets = list(self.mgr.targetitems.values())
-        for target in included_targets:
+            self.included_targets = list(self.mgr.targetitems.values())
+        for target in self.included_targets:
             if target in self.target_alignments:
                 sourceslist = self.target_alignments[target]
                 for sources in sourceslist:
@@ -66,11 +78,13 @@ class Reader:
                 self.aligned_tokens.append(unaligned_token)
         self.aligned_tokens.sort()
         # then collect unaligned source tokens
-        self.source_alignments = self.mgr.get_source_alignments()
+        self.source_alignments: set[Source] = self.mgr.get_source_alignments()
         for source in self.mgr.sourceitems.values():
             if source not in self.source_alignments:
                 unaligned_token = AlignedToken(sourcetoken=source)
                 self.aligned_tokens.append(unaligned_token)
+        # order the whole list
+        self.data = sorted(self.aligned_tokens)
 
 
 class Writer:
