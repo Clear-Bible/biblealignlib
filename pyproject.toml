@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.14"
+python = ">=3.10,<4.0"
 unicodecsv = "^0.14.1"
 jupyterlab = "^4.3.3"
 pandas = "^2.2.3"
@@ -37,7 +37,7 @@ jupyter-server-ydoc = "^1.1.0"
 altair = "^5.5.0"
 jupyter-ai = "^2.31.6"
 langchain-openai = "^0.3.33"
-biblelib = "0.3.28"
+biblelib = "^0.5.3"
 
 
 [tool.poetry.group.dev.dependencies]
