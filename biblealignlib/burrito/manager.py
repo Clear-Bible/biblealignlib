@@ -18,6 +18,14 @@ are identified by a language (code), target and source IDs, and a path to the da
 >>> mgr["40001024"]
 <VerseData: 40001024>
 
+>>> akouete = mgr.sourceitems["41004003001"]
+>>> akouete.display()
+41004003001: Ἀκούετε		 (Listen, ἀκούω, verb)
+>>> mgr.get_source_targets(akouete)
+[<Target: 41004003002>]
+>>> mgr.get_source_targets(akouete)[0].display()
+41004003002: Listen		 ('', False, False)
+
 # To upgrade older alignments to the latest standard, see
 # src.check.Upgrader.write_alignment_group()
 
@@ -252,3 +260,17 @@ class Manager(UserDict):
             sourcebcv for sourcebcv in self.bcv["sources"] if sourcebcv not in self.bcv["versedata"]
         ]
         return groupby_bcid(unaligned)
+
+    def get_source_targets(self, source: Source) -> list[Target]:
+        """Return a list of targets aligned to a source."""
+        sourcebcv: str = source.to_bcv()
+        # sometimes there's no corresponding verse: return [] if so
+        versedata: VerseData = self.bcv["versedata"].get(sourcebcv)
+        if not versedata:
+            print(f"Warning: no VerseData found for source BCV {sourcebcv}")
+            return []
+        source_targets = versedata.get_source_targets()
+        if source not in source_targets:
+            print(f"Warning: no alignments for source BCV {source}")
+            return []
+        return source_targets[source]
