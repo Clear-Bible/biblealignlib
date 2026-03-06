@@ -4,8 +4,10 @@ Largely from Claude.
 """
 
 import pytest
+import pandas as pd
 
-from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData
+from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData, Source, Target
+from biblealignlib.burrito.VerseData import DiffReason, DiffRecord
 
 # test published version
 ENGLANGDATAPATH = CLEARROOT / "Alignments/data/eng"
@@ -151,6 +153,12 @@ class TestVerseData:
         with pytest.raises(AssertionError, match="typeattr should be one of"):
             vd.unaligned(typeattr="invalid")
 
+    def test_get_source_targets(self, mgr: Manager) -> None:
+        vd: VerseData = mgr["41004003"]
+        source_targets: dict[Source, list[Target]] = vd.get_source_targets()
+        targetids = [t.id for t in source_targets[mgr.sourceitems["41004003001"]]]
+        assert targetids == ["41004003002"]
+
     def test_get_texts(self, mgr: Manager) -> None:
         """Test get_texts() method."""
         vd: VerseData = mgr["41004004"]
@@ -183,3 +191,96 @@ class TestVerseData:
         # Essential pairs should only include content words
         for src, _ in essential_pairs:
             assert src.is_content
+
+    def test_aligned_sources(self, mgr: Manager) -> None:
+        """Test aligned_sources property returns sources present in alignments."""
+        vd: VerseData = mgr["41004004"]
+        aligned = vd.aligned_sources
+        assert isinstance(aligned, list)
+        # All aligned sources must be in vd.sources
+        for src in aligned:
+            assert src in vd.sources
+        # The set of aligned sources equals what's in the alignment pairs
+        alignment_sources: set[Source] = {src for srcs, _ in vd.alignments for src in srcs}
+        assert set(aligned) == alignment_sources
+
+    def test_aligned_targets(self, mgr: Manager) -> None:
+        """Test aligned_targets property returns non-excluded targets in alignments."""
+        vd: VerseData = mgr["41004004"]
+        aligned = vd.aligned_targets
+        assert isinstance(aligned, list)
+        # All aligned targets must be from targets_included (non-excluded)
+        for trg in aligned:
+            assert trg in vd.targets_included
+            assert not trg.exclude
+        # The set must be a subset of what's in the alignment pairs
+        alignment_targets: set[Target] = {trg for _, trgs in vd.alignments for trg in trgs}
+        assert set(aligned).issubset(alignment_targets)
+
+    def test_aligned_and_unaligned_sources_partition(self, mgr: Manager) -> None:
+        """Test that aligned + unaligned sources partition all sources."""
+        vd: VerseData = mgr["41004004"]
+        aligned = set(vd.aligned_sources)
+        unaligned = set(vd.unaligned_sources)
+        assert aligned.isdisjoint(unaligned)
+        assert aligned | unaligned == set(vd.sources)
+
+    def test_aligned_and_unaligned_targets_partition(self, mgr: Manager) -> None:
+        """Test that aligned + unaligned targets partition targets_included."""
+        vd: VerseData = mgr["41004004"]
+        aligned = set(vd.aligned_targets)
+        unaligned = set(vd.unaligned_targets)
+        assert aligned.isdisjoint(unaligned)
+        assert aligned | unaligned == set(vd.targets_included)
+
+    def test_get_source_alignments(self, mgr: Manager) -> None:
+        """Test get_source_alignments() returns targets aligned to a specific source."""
+        vd: VerseData = mgr["41004003"]
+        source = mgr.sourceitems["41004003001"]
+        targets = vd.get_source_alignments(source)
+        assert isinstance(targets, list)
+        assert len(targets) == 1
+        assert targets[0].id == "41004003002"
+
+    def test_get_source_alignments_multi(self, mgr: Manager) -> None:
+        """Test get_source_alignments() for a source aligned to multiple targets."""
+        vd: VerseData = mgr["41004003"]
+        sower = mgr.sourceitems["41004003006"]
+        targets = vd.get_source_alignments(sower)
+        assert isinstance(targets, list)
+        target_ids = [t.id for t in targets]
+        assert target_ids == ["41004003008", "41004003009", "41004003010", "41004003011"]
+
+    def test_dataframe_shape(self, mgr: Manager) -> None:
+        """Test dataframe() returns a DataFrame with correct dimensions."""
+        vd: VerseData = mgr["41004004"]
+        df = vd.dataframe()
+        assert isinstance(df, pd.DataFrame)
+        assert len(df.index) == len(vd.sources)
+        assert len(df.columns) == len(vd.targets_included)
+
+    def test_dataframe_custom_marks(self, mgr: Manager) -> None:
+        """Test dataframe() respects hitmark and missmark arguments."""
+        vd: VerseData = mgr["41004004"]
+        df = vd.dataframe(hitmark="X", missmark=".")
+        values = df.values.flatten()
+        assert all(v in ("X", ".") for v in values)
+
+    def test_diff_identical(self, mgr: Manager) -> None:
+        """Test diff() of a VerseData against itself returns no differences."""
+        vd: VerseData = mgr["41004004"]
+        diffs = vd.diff(vd)
+        assert diffs == []
+
+    def test_diff_type_error(self, mgr: Manager) -> None:
+        """Test diff() raises AssertionError when compared with a non-VerseData."""
+        vd: VerseData = mgr["41004004"]
+        with pytest.raises(AssertionError):
+            vd.diff("not a VerseData")  # type: ignore[arg-type]
+
+    def test_diff_record_repr(self) -> None:
+        """Test DiffRecord __repr__ includes bcvid and reason."""
+        rec = DiffRecord(bcvid="41004004", diffreason=DiffReason.DIFFLEN)
+        r = repr(rec)
+        assert "41004004" in r
+        assert DiffReason.DIFFLEN.value in r
