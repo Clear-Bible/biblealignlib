@@ -144,6 +144,13 @@ class VerseData:
         """Return list of unaligned target tokens that are not excluded."""
         return [trg for trg in self.targets_included if trg not in self.aligned_targets]
 
+    # "40001009006" -> [<Target: 40001009007>]
+    def get_source_targets(self) -> dict[Source, list[Target]]:
+        """Return a mapping of source tokens to lists of aligned target tokens."""
+        # alignments are many-to-many, so we get map each source token
+        # ID to a list of target tokens
+        return {s: trg for src, trg in self.alignments for s in src}
+
     def get_pairs(self, essential: bool = False) -> list[tuple[Source, Target]]:
         """Return pharaoh-style pairs of source and target tokens.
 
