@@ -271,6 +271,6 @@ class Manager(UserDict):
             return []
         source_targets = versedata.get_source_targets()
         if source not in source_targets:
-            print(f"Warning: no alignments for source BCV {source}")
+            print(f"Warning: no alignments for source BCV {source}/{source.text}")
             return []
         return source_targets[source]
