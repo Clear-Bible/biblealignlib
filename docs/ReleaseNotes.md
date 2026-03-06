@@ -1,5 +1,19 @@
 # Release Notes
 
+## 0.2.7
+
+### Enhancements
+- **VerseData**: Added `get_source_targets()` method returning a `dict[Source, list[Target]]` mapping each source token to its aligned targets.
+- **Manager**: Added `get_source_targets(source)` method returning `list[Target]` aligned to a given source token, with warnings for unaligned sources or missing verse data.
+
+### Testing
+- Expanded `test_VerseData.py` with 11 new tests covering `aligned_sources`, `aligned_targets`, partition invariants for aligned/unaligned sets, `get_source_alignments()`, `dataframe()` shape and custom marks, `diff()` (identical and type-error cases), and `DiffRecord.__repr__`.
+- Expanded `test_manager.py` with 6 new tests covering `get_source_targets()` return types and warning paths, `token_alignments()` by source lemma, target text, and no-match cases, and `display_record()` output format.
+
+## 0.2.6
+
+* Don't know: probably minor.
+
 ## 0.2.5
 
 * Updated fix to ordering for `interlinear.reverse.Writer()`: now that
