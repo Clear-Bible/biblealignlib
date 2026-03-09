@@ -1,12 +1,31 @@
 # Release Notes
 
+## 0.2.9
+
+* Repo is now _public_ so Claude can read the source code to support
+  other projects.
+* Moved `BCVPair` from `util.merger` to `util.__init__` so it is
+  accessible as `biblealignlib.util.BCVPair`; added missing import in
+  `util.merger`.
+- Added `tests/biblealignlib/util/` test directory with three new files:
+  - `test__init__.py`: 6 tests for `BCVPair` (all four pairing states,
+    no-diff on self-compare, `__repr__`).
+  - `test_merger.py`: 11 tests for `Merger` (initialization,
+    pairing counts, overlaps, diffpairs, self-merge, BCV coverage,
+    `safe_merge()`, `add_records()` duplicate detection, `show_diffs()`).
+  - `test_vocab.py`: 8 tests for `LemmaSetMaximizer` (initialization,
+    `doc_lemmas` structure, GCM length/entries/disjointness, no duplicate
+    bcids, `write_vocab()` output).
+   
+  
 ## 0.2.8
 
 * Slight improvement to warning for
   `burrito.manager.Manager.get_source_targets()`.
 * Added `aligned` parameter to `burrito.VerseData.VerseData.table()`:
 	with `aligned=False` show all the source tokens and their
-	alignments. Default is still `aligned=True`. 
+	alignments. Default is still `aligned=True`.
+
 
 ## 0.2.7
 
