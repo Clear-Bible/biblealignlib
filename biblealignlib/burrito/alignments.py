@@ -320,6 +320,7 @@ def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) 
     _write_meta(f, group.meta)
     f.write(f' "roles": {json.dumps(group.roles)},\n')
     f.write(f' "type": "{group._type}",\n "records": [\n ')
+    # should sort the records: NIV11 doesn't appear to be sorted
     for arec in group.records[:-1]:
         json.dump(arec.asdict(), f)
         f.write(",\n ")

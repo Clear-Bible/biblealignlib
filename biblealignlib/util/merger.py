@@ -1,7 +1,12 @@
 """Merge alignment data.
 
 Input is two Manager instances, which must be based on the same
-source, target language, and target version.
+source, target language, AND target version.
+
+- If the target versions are different, use transfer.py instead of
+this code.
+- If the source or target languages aren't the same, this code is
+  not relevant to your problem.
 
 
 >>> from biblealignlib.burrito import CLEARROOT, Manager, AlignmentSet
@@ -28,43 +33,16 @@ Counter({'neither': 6191, 'mgr1': 1272, 'both': 475, 'mgr2': 1})
 22
 >>> mergerinst.diffpairs
 [<BCVPair(57001002)>, <BCVPair(57001003)>, <BCVPair(57001004)>, <BCVPair(57001005)>, ... ]
+
 """
 
 from collections import Counter
-from dataclasses import dataclass, field
 from typing import cast, Optional
 
 # from biblealignlib.burrito import DiffRecord, Manager, VerseData
 from ..burrito import AlignmentGroup, AlignmentRecord, Manager, VerseData, write_alignment_group
 from ..burrito.util import groupby_bcid
-from ..burrito.VerseData import DiffRecord
-
-
-@dataclass
-class BCVPair:
-    """Manage BCV data from two managers."""
-
-    bcv: str
-    mgr1_data: Optional[VerseData] = None
-    mgr2_data: Optional[VerseData] = None
-    pairing: str = ""
-    diffs: Optional[list[DiffRecord]] = field(init=False, default_factory=list[DiffRecord])
-
-    def __post_init__(self) -> None:
-        """Initialize an instance."""
-        if self.mgr1_data and self.mgr2_data:
-            self.pairing = "both"
-            self.diffs = self.mgr1_data.diff(self.mgr2_data)
-        elif self.mgr1_data:
-            self.pairing = "mgr1"
-        elif self.mgr2_data:
-            self.pairing = "mgr2"
-        else:
-            self.pairing = "neither"
-
-    def __repr__(self) -> str:
-        """Return a printed representation."""
-        return f"<BCVPair({self.bcv})>"
+from . import BCVPair
 
 
 class Merger:

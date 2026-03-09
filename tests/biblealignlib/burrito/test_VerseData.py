@@ -159,6 +159,33 @@ class TestVerseData:
         targetids = [t.id for t in source_targets[mgr.sourceitems["41004003001"]]]
         assert targetids == ["41004003002"]
 
+    def test_table_aligned(self, mgr: Manager, capsys) -> None:
+        """Test table() with aligned=True (default) produces output."""
+        vd: VerseData = mgr["41004003"]
+        vd.table()
+        captured = capsys.readouterr()
+        assert len(captured.out) > 0
+        # Each line should have a tab separator
+        lines = [l for l in captured.out.splitlines() if l.strip()]
+        assert all("\t" in line for line in lines)
+
+    def test_table_unaligned(self, mgr: Manager, capsys) -> None:
+        """Test table() with aligned=False shows source-centric view."""
+        vd: VerseData = mgr["41004003"]
+        vd.table(aligned=False)
+        captured = capsys.readouterr()
+        assert len(captured.out) > 0
+        lines = [l for l in captured.out.splitlines() if l.strip()]
+        # Should have one line per source token
+        assert len(lines) == len(vd.sources)
+
+    def test_table_srcwidth(self, mgr: Manager, capsys) -> None:
+        """Test table() respects srcwidth parameter."""
+        vd: VerseData = mgr["41004003"]
+        vd.table(aligned=False, srcwidth=60)
+        captured = capsys.readouterr()
+        assert len(captured.out) > 0
+
     def test_get_texts(self, mgr: Manager) -> None:
         """Test get_texts() method."""
         vd: VerseData = mgr["41004004"]

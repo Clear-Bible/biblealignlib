@@ -198,14 +198,19 @@ class VerseData:
             if token in unaligned:
                 print(token._display)
 
-    def table(self) -> None:
+    def table(self, aligned: bool = True, srcwidth: int = 45) -> None:
         """Display a tabbed table of alignments"""
-        for sources, targets in self.alignments:
-            print(
-                " ".join([src.text for src in sources]),
-                "\t",
-                " ".join([trg.text for trg in targets]),
-            )
+        if aligned:
+            for sources, targets in self.alignments:
+                print(
+                    f"{str([src.idtext for src in sources]):{srcwidth}}\t\t{[trg.idtext for trg in targets]}"
+                )
+        else:
+            # show all sources with their (possibly empty) target alignments
+            for source in self.sources:
+                print(
+                    f"{str(source.idtext):{srcwidth}}\t\t{[trg.idtext for trg in self.get_source_alignments(source)]}"
+                )
 
     def get_texts(
         self, typeattr: str = "targets", unique: bool = False, keepexcluded: bool = False

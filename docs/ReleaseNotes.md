@@ -1,5 +1,13 @@
 # Release Notes
 
+## 0.2.8
+
+* Slight improvement to warning for
+  `burrito.manager.Manager.get_source_targets()`.
+* Added `aligned` parameter to `burrito.VerseData.VerseData.table()`:
+	with `aligned=False` show all the source tokens and their
+	alignments. Default is still `aligned=True`. 
+
 ## 0.2.7
 
 ### Enhancements
