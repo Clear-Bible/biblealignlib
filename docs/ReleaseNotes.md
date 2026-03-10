@@ -8,15 +8,9 @@
   accessible as `biblealignlib.util.BCVPair`; added missing import in
   `util.merger`.
 - Added `tests/biblealignlib/util/` test directory with three new files:
-  - `test__init__.py`: 6 tests for `BCVPair` (all four pairing states,
-    no-diff on self-compare, `__repr__`).
-  - `test_merger.py`: 11 tests for `Merger` (initialization,
-    pairing counts, overlaps, diffpairs, self-merge, BCV coverage,
-    `safe_merge()`, `add_records()` duplicate detection, `show_diffs()`).
-  - `test_vocab.py`: 8 tests for `LemmaSetMaximizer` (initialization,
-    `doc_lemmas` structure, GCM length/entries/disjointness, no duplicate
-    bcids, `write_vocab()` output).
-   
+  - `test__init__.py`: 6 tests for `BCVPair` (all four pairing states, no-diff on self-compare, `__repr__`).
+  - `test_merger.py`: 11 tests for `Merger` (initialization, pairing counts, overlaps, diffpairs, self-merge, BCV coverage, `safe_merge()`, `add_records()` duplicate detection, `show_diffs()`).
+  - `test_vocab.py`: 8 tests for `LemmaSetMaximizer` (initialization, `doc_lemmas` structure, GCM length/entries/disjointness, no duplicate bcids, `write_vocab()` output).
   
 ## 0.2.8
 
