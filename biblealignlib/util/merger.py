@@ -52,9 +52,12 @@ class Merger:
         self.mgr1 = mgr1
         self.mgr2 = mgr2
         for attr in ("sourceid", "targetlanguage", "targetid"):
-            assert getattr(self.mgr1.alignmentset, attr) == getattr(
-                self.mgr1.alignmentset, attr
-            ), f"Managers must have the same {attr} attribute."
+            mgr1attr = getattr(self.mgr1.alignmentset, attr)
+            mgr2attr = getattr(self.mgr2.alignmentset, attr)
+            if mgr1attr != mgr2attr:
+                raise ValueError(
+                    f"Managers must have the same {attr!r} attribute, but {mgr1attr} != {mgr2attr}"
+                )
         # should be the same for both
         self.allsrcbcv = mgr1.bcv["sources"]
         self.bcv_pairs: dict[str, BCVPair] = self.get_bcv_pairs()
