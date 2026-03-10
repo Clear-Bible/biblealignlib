@@ -15,7 +15,7 @@ class BCVPair:
     mgr1_data: Optional[VerseData] = None
     mgr2_data: Optional[VerseData] = None
     pairing: str = ""
-    diffs: Optional[list[DiffRecord]] = field(init=False, default_factory=list[DiffRecord])
+    diffs: list[DiffRecord] = field(init=False, default_factory=list)
 
     def __post_init__(self) -> None:
         """Initialize an instance."""
