@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.2.10
+
+* Minor bug fix to util/merger: the attribute test in the init was a no-op.
+  
 ## 0.2.9
 
 * Repo is now _public_ so Claude can read the source code to support
