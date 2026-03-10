@@ -1,24 +1,36 @@
-site_name: Alignments
-repo_url: https://github.com/Clear-Bible/alignments
-#site_url: https://sboisen.github.io/alignments
-site_description: Word alignments for Bibles, including both automatic alignments and manually corrected alignments.
+site_name: biblealignlib
+repo_url: https://github.com/Clear-Bible/biblealignlib
+site_description: Python library for managing word-level alignments between Bible source texts and target translations.
 site_author: Sean Boisen
 edit_uri: edit/main/docs/
-repo_name: Clear-Bible/alignments
-copyright: © 2022 by [Clear Bible, Inc](http://www.clear.bible)
+repo_name: Clear-Bible/biblealignlib
+copyright: © 2022–2026 by <a href="http://www.clear.bible">Clear Bible, Inc</a>
 
 nav:
   - Home: index.md
-  - Source Formats: sourceformats.md
-  - Target Formats: targetformats.md
-  - Alignment Formats: formats.md
-  - Alignment Metadata: metadata.md
-  - Contributing Alignments: contributing.md
-  - Workflow: workflow.md
-  - Modules: modules.md
-  - Glossary: glossary.md
-  - Other Resources: resources.md
+  - Tutorials:
+      - tutorials/index.md
+      - Your First Alignment: tutorials/first-alignment.md
+  - How-to Guides:
+      - how-to/index.md
+      - Load an Alignment Set: how-to/load-alignment-set.md
+      - Search Alignments: how-to/search-alignments.md
+      - Compare Alignment Sets: how-to/compare-alignment-sets.md
+      - Export Alignment Data: how-to/export-alignments.md
+      - Score Alignments: how-to/score-alignments.md
+  - Reference:
+      - reference/index.md
+      - burrito: reference/burrito.md
+      - util: reference/util.md
+      - autoalign: reference/autoalign.md
+      - interlinear: reference/interlinear.md
+  - Explanation:
+      - explanation/index.md
+      - The Alignment Model: explanation/alignment-model.md
+      - BCVWPID Identifiers: explanation/bcvwpid.md
+      - Scripture Burrito Format: explanation/scripture-burrito.md
   - Release Notes: ReleaseNotes.md
+
 plugins:
   - search
   - mkdocstrings:
@@ -27,10 +39,14 @@ plugins:
             setup_commands:
                 - import sys
                 - sys.path.append('../')
+
 theme:
   name: material
-  feature:
-    tabs: true
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - toc.integrate
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -52,9 +68,9 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Clear-Bible/alignments
+      link: https://github.com/Clear-Bible/biblealignlib
     - icon: fontawesome/brands/python
-      link: https://pypi.com/project/alignments
+      link: https://pypi.org/project/biblealignlib
 
 markdown_extensions:
   - toc:
@@ -65,4 +81,9 @@ markdown_extensions:
   - footnotes
   - pymdownx.tasklist:
       custom_checkbox: true
-
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - tables
