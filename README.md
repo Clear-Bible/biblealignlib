@@ -3,13 +3,12 @@
 Biblica's code for working with Bible alignment data from
 https://github.com/Clear-Bible/Alignments .
 
-Currently private but we should move toward a future where it's
-public. 
-
 ## Installing extra dependencies
 
 ### eflomal
-`eflomal` is specified as an extra, so it is not installed with `poetry install`.
+
+`eflomal` is a tool for automated alignment. It is specified as an
+extra, so it is not installed with `poetry install`.
 
 On macOS, you may need to install additional dependencies before installing:
 
