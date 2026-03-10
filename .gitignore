@@ -19,6 +19,9 @@ dist/
 # MacOS
 .DS_Store
 
+# mkdocs build output
+site/
+
 # project-specific
 # ignore luigi logging
 .ipynb_checkpoints/
