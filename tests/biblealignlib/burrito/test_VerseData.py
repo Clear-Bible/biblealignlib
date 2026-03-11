@@ -7,7 +7,7 @@ import pytest
 import pandas as pd
 
 from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData, Source, Target
-from biblealignlib.burrito.VerseData import DiffReason, DiffRecord
+from biblealignlib.burrito.DiffRecord import DiffReason, DiffRecord
 
 # test published version
 ENGLANGDATAPATH = CLEARROOT / "Alignments/data/eng"

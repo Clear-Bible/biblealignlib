@@ -19,6 +19,7 @@ from .AlignmentType import TranslationType
 from .alignments import AlignmentsReader, write_alignment_group
 from .manager import Manager, VerseData
 from .BaseToken import BaseToken, asbool, bare_id
+from .DiffRecord import DiffReason, DiffRecord
 from .source import macula_prefixer, macula_unprefixer, Source, SourceReader
 from .target import Target, TargetReader
 from .util import groupby_key, groupby_bcid, groupby_bcv, token_groupby_bc, filter_by_bcv
@@ -41,6 +42,9 @@ __all__ = [
     "BaseToken",
     "asbool",
     "bare_id",
+    # DiffRecord
+    "DiffReason",
+    "DiffRecord",
     # alignments
     "AlignmentsReader",
     "write_alignment_group",

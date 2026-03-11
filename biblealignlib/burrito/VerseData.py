@@ -29,7 +29,6 @@ Target: 44020020021: করিনি		 ('', False, False)
 
 from collections import Counter
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
 import pandas as pd
@@ -39,47 +38,7 @@ from .BaseToken import BaseToken
 from .source import Source
 from .target import Target
 from .AlignmentGroup import AlignmentRecord
-
-
-class DiffReason(Enum):
-    """Enumerate constants for alignment differences."""
-
-    DIFFLEN = "Different number of alignments"
-    DIFFSOURCES = "Source selectors differ"
-    DIFFTARGETS = "Target selectors differ"
-    DIFFNOTES = "Different notes"
-    DIFFSTATUS = "Different status"
-
-
-@dataclass
-class DiffRecord:
-    """Container for data on alignment differences.
-
-    The same verse could have multiple alignment differences.
-    """
-
-    # the alignment BCV
-    bcvid: str
-    # the data in the first alignment
-    sources1: tuple[Source, ...] = ()
-    targets1: tuple[Target, ...] = ()
-    # the data in the second alignment
-    sources2: tuple[Source, ...] = ()
-    targets2: tuple[Target, ...] = ()
-    # why it's different
-    diffreason: Optional[DiffReason] = None
-    # any auxiliary data
-    data: tuple = ()
-
-    def __repr__(self) -> str:
-        """Return a string representation."""
-        basestr = (
-            f"<DiffRecord ({self.bcvid}): '{self.diffreason.value if self.diffreason else None}'"
-        )
-        if self.data:
-            basestr += ", " + repr(self.data)
-        basestr += ">"
-        return basestr
+from .DiffRecord import DiffRecord, DiffReason
 
 
 @dataclass
@@ -316,7 +275,7 @@ class VerseData:
         return None
 
     # TODO: compare
-    def diff(self, other: "VerseData") -> Optional[list[DiffRecord]]:
+    def diff(self, other: "VerseData") -> list[DiffRecord]:
         """Return a (possibly empty) list of differences between the alignments data.
 
         If there are a different number of alignments, that's the only
