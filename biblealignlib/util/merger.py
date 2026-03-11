@@ -39,9 +39,9 @@ Counter({'neither': 6191, 'mgr1': 1272, 'both': 475, 'mgr2': 1})
 from collections import Counter
 from typing import cast, Optional
 
-# from biblealignlib.burrito import DiffRecord, Manager, VerseData
 from ..burrito import AlignmentGroup, AlignmentRecord, Manager, VerseData, write_alignment_group
 from ..burrito.util import groupby_bcid
+from ..burrito import DiffRecord
 from . import BCVPair
 
 
@@ -77,10 +77,13 @@ class Merger:
             data2: Optional[VerseData] = cast(
                 Optional[VerseData], self.mgr2.bcv["versedata"].get(bcv)
             )
+            if data1 and data2:
+                diffs: list[DiffRecord] = data1.diff(data2)
             bcv_pairs[bcv] = BCVPair(
                 bcv=bcv,
                 mgr1_data=data1,
                 mgr2_data=data2,
+                diffs=diffs,
             )
         return bcv_pairs
 
