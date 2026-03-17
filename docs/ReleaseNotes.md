@@ -1,5 +1,22 @@
 # Release Notes
 
+## 0.3.1
+
+* Updated definition for `burrito.BaseToken.formatstr` to use the
+  <ID>|<text> format. 
+* Added __hash__ and properties to DiffRecord:
+  n_(sources|targets)(1|2). Added tests.
+* In `burrito.util`: export BCVPair and add diffs tests.
+* Added `diff-match-patch` to dev dependencies, and token_to_chars for
+  word-level diffs.
+* Added `util/DiffTargets.py` for comparing two slightly different editions of
+  the same text. Still under construction. 
+* Added to `burrito.VerseData.Versedata` for easier BCV->token
+  mapping. Add `record_as_tsv(record)` to produce a 3-column TSV
+  (identifier, sources, targets) using the combined id|text notation
+  for easier export and inspection of alignment records. 
+
+  
 ## 0.3.0
 
 * Added documentation in the style of
