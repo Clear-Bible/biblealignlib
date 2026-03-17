@@ -47,6 +47,7 @@ pytest-cov = "^4.0.0"
 mypy = "^1.0"
 pre-commit = "^4.0"
 tox = "^4.0"
+diff-match-patch = "^20241021"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.6"
