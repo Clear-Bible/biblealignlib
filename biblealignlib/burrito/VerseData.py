@@ -70,6 +70,16 @@ class VerseData:
         return f"<VerseData: {self.bcvid}>"
 
     @property
+    def sourceitems(self) -> dict[str, Source]:
+        """Return mapping from BCVW to source tokens."""
+        return {src.bare_id: src for src in self.sources}
+
+    @property
+    def targetitems(self) -> dict[str, Target]:
+        """Return mapping from BCVW to target tokens."""
+        return {src.bare_id: src for src in self.targets}
+
+    @property
     def aligned_sources(self) -> list[Source]:
         """Return list of aligned source tokens.
 
@@ -202,6 +212,30 @@ class VerseData:
         else:
             texts = [item.text for item in tokens]
         return texts
+
+    def tokenstrings(self, record: AlignmentRecord, typeattr: str) -> list[str]:
+        """Return a list of id|text strings for the tokens in this record."""
+        assert typeattr in self._typeattrs, f"typeattr should be one of {self._typeattrs}"
+        items = self.sourceitems if typeattr == "sources" else self.targetitems
+        selectors: list[str] = (
+            record.source_selectors if typeattr == "sources" else record.target_selectors
+        )
+        return [srctoken.tokenstr for sel in selectors if (srctoken := items[sel])]
+
+    def record_as_tsv(self, record: AlignmentRecord) -> str:
+        """Return a 3-column TSV string representation of this record.
+
+        Represents tokens using combined id|text notation.
+        """
+        sourcestrings = self.tokenstrings(record, "sources")
+        targetstrings = self.tokenstrings(record, "targets")
+        return "\t".join(
+            [
+                record.identifier,
+                ", ".join(sourcestrings),
+                ", ".join(targetstrings),
+            ]
+        )
 
     ## NOT YET WORKING
     # def generate_html_table(self) -> str:
