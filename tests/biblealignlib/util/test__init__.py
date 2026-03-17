@@ -3,6 +3,7 @@
 import pytest
 
 from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData
+from biblealignlib.burrito.DiffRecord import DiffRecord, DiffReason
 from biblealignlib.util import BCVPair
 
 ENGLANGDATAPATH = CLEARROOT / "Alignments/data/eng"
@@ -30,11 +31,19 @@ class TestBCVPair:
         pair = BCVPair(bcv="41004003", mgr1_data=vd, mgr2_data=vd)
         assert pair.pairing == "both"
 
-    def test_both_identical_no_diffs(self, mgr: Manager) -> None:
-        """BCVPair comparing a VerseData with itself has no diffs."""
+    def test_diffs_default_empty(self, mgr: Manager) -> None:
+        """BCVPair diffs defaults to empty list when not supplied."""
         vd: VerseData = mgr["41004003"]
         pair = BCVPair(bcv="41004003", mgr1_data=vd, mgr2_data=vd)
         assert pair.diffs == []
+
+    def test_diffs_supplied_by_caller(self, mgr: Manager) -> None:
+        """BCVPair accepts a caller-supplied diffs list."""
+        vd: VerseData = mgr["41004003"]
+        diff = DiffRecord(bcvid="41004003", diffreason=DiffReason.DIFFLEN)
+        pair = BCVPair(bcv="41004003", mgr1_data=vd, mgr2_data=vd, diffs=[diff])
+        assert len(pair.diffs) == 1
+        assert pair.diffs[0].diffreason == DiffReason.DIFFLEN
 
     def test_mgr1_only(self, mgr: Manager) -> None:
         """BCVPair with only mgr1_data has pairing='mgr1'."""

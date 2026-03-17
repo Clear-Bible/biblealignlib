@@ -5,6 +5,17 @@ from typing import Optional
 
 from ..burrito import DiffRecord, VerseData
 
+# under development, so not in the public API yet
+# from .DiffTargets import diff_verse_targets, DiffTargets
+
+__all__ = [
+    # BCVPair
+    "BCVPair",
+    # DiffTargets
+    "diff_verse_targets",
+    "DiffTargets",
+]
+
 
 @dataclass
 class BCVPair:
