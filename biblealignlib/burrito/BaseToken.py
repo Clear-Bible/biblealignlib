@@ -49,6 +49,10 @@ class BaseToken:
         return str(self.bcv)
 
     @property
+    def tokenstr(self) -> str:
+        return f"{self.id}|{self.text}"
+
+    @property
     def idtext(self) -> tuple[str, str]:
         """Return a tuple of id and text.
 
@@ -58,10 +62,6 @@ class BaseToken:
             self.id,
             self.text,
         )
-
-    @property
-    def tokenstr(self) -> str:
-        return f"{self.id}, {self.text}"
 
     @property
     def bare_id(self) -> str:
