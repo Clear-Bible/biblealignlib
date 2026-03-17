@@ -345,8 +345,6 @@ class DiffTargets84(UserDict):
 
                 print(f"--- {versedata.bcvid}, KeyError on {e}")
                 print(f"Record: {alrec}")
-                print(f"Selectors: {alrec.target_selectors}")
-                print(f"niv11map keys: {niv11map.keys()}")
 
     def write_tsv(self, outpath: Path = None) -> None:
         """Write TSV for review and manual correction."""
