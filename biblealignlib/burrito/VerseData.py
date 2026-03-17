@@ -172,13 +172,13 @@ class VerseData:
         if aligned:
             for sources, targets in self.alignments:
                 print(
-                    f"{str([src.idtext for src in sources]):{srcwidth}}\t\t{[trg.idtext for trg in targets]}"
+                    f"{str([src.tokenstr for src in sources]):{srcwidth}}\t\t{[trg.tokenstr for trg in targets]}"
                 )
         else:
             # show all sources with their (possibly empty) target alignments
             for source in self.sources:
                 print(
-                    f"{str(source.idtext):{srcwidth}}\t\t{[trg.idtext for trg in self.get_source_alignments(source)]}"
+                    f"{str(source.tokenstr):{srcwidth}}\t\t{[trg.tokenstr for trg in self.get_source_alignments(source)]}"
                 )
 
     def get_texts(

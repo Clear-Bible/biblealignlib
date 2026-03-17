@@ -24,7 +24,7 @@ class TestBaseToken:
         assert mrk_4_9_4.id == "410040090051"
         assert mrk_4_9_4.text == "ὦτα"
         assert mrk_4_9_4.altId[:-2] == mrk_4_9_4.text
-        assert repr(mrk_4_9_4) == "<BaseToken: 410040090051>"
+        assert repr(mrk_4_9_4) == "<BaseToken: 410040090051|ὦτα>"
         assert mrk_4_9_4.bcv == "41004009"
         assert mrk_4_9_4.idtext == ("410040090051", "ὦτα")
         assert mrk_4_9_4.tokenstr == "410040090051|ὦτα"

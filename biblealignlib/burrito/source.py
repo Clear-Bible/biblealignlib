@@ -17,12 +17,11 @@ called from burrito.manager.Manager().
 5468
 # dict: token ID -> Source() instance
 >>> src["n41004003001"]
-src["n41004003001"]
-<Source: n41004003001>
+<Source: n41004003001|Ἀκούετε>
 >>> src["n41004003001"].display()
 n41004003001: Ἀκούετε		 (Listen, ἀκούω, verb)
->>> src["n41004003001"].idtext
-('n41004003001', 'Ἀκούετε')
+>>> src["n41004003001"].tokenstr
+'n41004003001|Ἀκούετε'
 >>> src["n41004003001"].asdict()
 {'identifier': 'n41004003001',
  'altId': 'Ἀκούετε-1',

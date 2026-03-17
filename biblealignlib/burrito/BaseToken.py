@@ -25,7 +25,7 @@ class BaseToken:
 
     def __repr__(self) -> str:
         """Return a printed representation."""
-        return f"<{self.__class__.__name__}: {self.id}>"
+        return f"<{self.__class__.__name__}: {self.tokenstr}>"
 
     #
     def __hash__(self) -> int:
