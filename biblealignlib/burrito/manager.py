@@ -114,6 +114,10 @@ class Manager(UserDict):
             keepbadrecords=self.keepbadrecords,
         )
         self.alignmentsreader.clean_alignments(self.sourceitems, self.targetitems)
+        # TODO: upgrade the selectors to use tokenstr. This requires
+        # knowing the source and targetitems, but alignmentsreader
+        # doesn't have that data
+        # self.add_tokenstr_to_records(self)
         # group records by BCV
         self.bcv["records"] = groupby_bcv(
             list(self.alignmentsreader.alignmentgroup.records), lambda r: r.source_bcv
