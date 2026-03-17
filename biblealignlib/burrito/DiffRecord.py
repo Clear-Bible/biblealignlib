@@ -35,6 +35,12 @@ class DiffRecord:
     diffreason: Optional[DiffReason] = None
     # any auxiliary data
     data: tuple = ()
+    # optional
+    n_differences: Optional[int] = None
+
+    def __hash__(self) -> int:
+        """Return a hash based on bcvid, diffreason, and data."""
+        return hash((self.bcvid, self.diffreason, self.data))
 
     def __repr__(self) -> str:
         """Return a string representation."""
@@ -45,3 +51,23 @@ class DiffRecord:
             basestr += ", " + repr(self.data)
         basestr += ">"
         return basestr
+
+    @property
+    def n_sources1(self) -> int:
+        """Return the number of sources in the first alignment."""
+        return len(self.sources1)
+
+    @property
+    def n_sources2(self) -> int:
+        """Return the number of sources in the second alignment."""
+        return len(self.sources2)
+
+    @property
+    def n_targets1(self) -> int:
+        """Return the number of targets in the first alignment."""
+        return len(self.targets1)
+
+    @property
+    def n_targets2(self) -> int:
+        """Return the number of targets in the second alignment."""
+        return len(self.targets2)
