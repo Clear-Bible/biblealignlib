@@ -1,4 +1,14 @@
-"""Manage the target/translation data for Grape City (gc) alignment data.
+"""Manage the target/translation data for alignment data.
+
+This typically reads the output of kathairo.
+
+Limitations:
+
+- Each token is assigned to the relevant source verse, which may be
+  different than the verse assignments in the target text. This is
+  version-specific, not necessarily a versification issue. So verse
+  identifiers may need mapping.
+    - Example: SBLGNT for 3JN has v. 15, but all these tokens are in v. 14 in the NIV11.
 
 >>> from biblealignlib.burrito import target
 # Reading is normally done by Manager
@@ -15,6 +25,7 @@
 # write the tokens out
 >>> LANGDATAPATH = CLEARROOT / "alignments-eng/data"
 >>> tr.write_tsv(tokenlist=tr.data.values(), outpath=(LANGDATAPATH / "targets/BSB/new-nt_BSB.tsv"))
+
 """
 
 from collections import UserDict, defaultdict
