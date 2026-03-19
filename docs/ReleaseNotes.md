@@ -1,8 +1,25 @@
 # Release Notes
 
+## 0.3.2
+
+* Now using `burrito.BaseToken.tokenstr` as `__repr__` for BaseToken: updates to tests and
+  examples.
+* Added `update_target_selectors()` to
+  `burrito.AlignmentGroup.AlignmentRecord`. 
+* Added `_record_dict()` to
+  `burrito.alignments.write_alignment_group`. 
+* Introduced `burrito.DiffAlignments.DiffAlignments()` utility to
+  compare two AlignmentSet alignment groups record-by-record. Matches
+  records by sorted source selectors, ignores meta.id, and reports
+  differences in target selectors and meta fields (creator, note,
+  origin, status). Adds RecordDiff dataclass, computes records only in
+  one set, and provides a human-readable show() summary; validates
+  sourceid/targetid/targetlanguage before comparing.
+* Updated tests and documentation.
+  
 ## 0.3.1
 
-* Updated definition for `burrito.BaseToken.formatstr` to use the
+* Updated definition for `burrito.BaseToken.tokenstr` to use the
   <ID>|<text> format. 
 * Added __hash__ and properties to DiffRecord:
   n_(sources|targets)(1|2). Added tests.
