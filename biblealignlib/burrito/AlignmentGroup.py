@@ -246,6 +246,14 @@ class AlignmentRecord:
         """Return the target selectors for this record."""
         return self.get_selectors("target")
 
+    def update_target_selectors(self, selectors: list[str]) -> None:
+        """Replace the target selectors for this record.
+
+        Selectors are sorted, matching the behaviour of
+        AlignmentReference.__post_init__.
+        """
+        self.references["target"].selectors = sorted(selectors)
+
     @property
     def selectors(self) -> tuple[list[str], list[str]]:
         """Return a tuple of source and target selectors for this record."""
