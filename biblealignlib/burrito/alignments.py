@@ -301,6 +301,7 @@ def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) 
     """Write JSON data for an arbitrary group in Scripture Burrito format.
 
     Writes some of the JSON by hand to get records on the same line.
+    Record meta.id values are assigned sequentially per BCV, e.g. "40001001.1".
     """
 
     def _write_documents(out: TextIO, documents: tuple[Document, Document]) -> None:
@@ -311,9 +312,21 @@ def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) 
         out.write(" ],\n")
 
     def _write_meta(out: TextIO, meta: Metadata) -> None:
-        """Write metdatadata to out."""
+        """Write metadata to out."""
         metarow = '"meta": ' + json.dumps(meta.asdict())
         f.write(f" {metarow},\n")
+
+    def _record_dict(arec: AlignmentRecord, bcv_counters: dict[str, int]) -> dict[str, Any]:
+        """Return the serialized dict for arec with a sequential BCV-based id.
+
+        This converts the ClearAligner opaque IDs to something
+        meaningful, attempting to make files more diff-able.
+        """
+        bcv = arec.source_bcv
+        bcv_counters[bcv] = bcv_counters.get(bcv, 0) + 1
+        recdict = arec.asdict()
+        recdict["meta"]["id"] = f"{bcv}.{bcv_counters[bcv]:02}"
+        return recdict
 
     f.write("{\n")
     _write_documents(f, group.documents)
@@ -321,9 +334,10 @@ def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) 
     f.write(f' "roles": {json.dumps(group.roles)},\n')
     f.write(f' "type": "{group._type}",\n "records": [\n ')
     # should sort the records: NIV11 doesn't appear to be sorted
+    bcv_counters: dict[str, int] = {}
     for arec in group.records[:-1]:
-        json.dump(arec.asdict(), f)
+        json.dump(_record_dict(arec, bcv_counters), f)
         f.write(",\n ")
     # now the last one without a comma, because JSON
-    json.dump(group.records[-1].asdict(), f)
+    json.dump(_record_dict(group.records[-1], bcv_counters), f)
     f.write("\n ]}")
