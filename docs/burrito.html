@@ -1,0 +1,782 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>burrito.html</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+
+</head>
+
+<body>
+
+<h1 id="burrito-module-documentation">Burrito Module Documentation</h1>
+<p>The <code>burrito</code> module provides the core infrastructure for
+working with Bible alignment data in Scripture Burrito format. It
+handles reading, writing, validating, and managing word-level alignments
+between source manuscripts (Hebrew/Greek) and target translations.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#core-concepts">Core Concepts</a></li>
+<li><a href="#module-structure">Module Structure</a></li>
+<li><a href="#key-classes">Key Classes</a></li>
+<li><a href="#common-workflows">Common Workflows</a></li>
+<li><a href="#api-reference">API Reference</a></li>
+</ul>
+<h2 id="overview">Overview</h2>
+<p>The burrito module implements the <a
+href="https://docs.google.com/document/d/1zR5gsrm3gIoNiHVBlWz5_BBw3N-Ew1-4M5rMsFrPzSw/">Scripture
+Burrito Alignment Standard v0.3</a>, providing:</p>
+<ul>
+<li><strong>Token Management</strong>: Source (manuscript) and target
+(translation) token representations</li>
+<li><strong>Alignment Records</strong>: Structured data linking source
+and target tokens</li>
+<li><strong>Data Validation</strong>: Detection and reporting of
+malformed alignment data</li>
+<li><strong>I/O Operations</strong>: Reading from TSV and JSON, writing
+to Scripture Burrito JSON format</li>
+<li><strong>Verse-level Access</strong>: VerseData class for working
+with complete verse alignments</li>
+</ul>
+<h2 id="core-concepts">Core Concepts</h2>
+<h3 id="bcvwpid-identifier-format">BCVWPID Identifier Format</h3>
+<p>Token identifiers use the BCVWPID format:
+<strong>Book-Chapter-Verse-Word-Part ID</strong></p>
+<ul>
+<li><strong>Format</strong>: <code>BBCCCVVVWWWP</code> (12 characters,
+or 11 without part index)</li>
+<li><strong>Example</strong>: <code>40001001001</code> = Matthew 1:1,
+word 1</li>
+<li><strong>Prefixed</strong>: <code>n40001001001</code> (NT) or
+<code>o01001001001</code> (OT) - Macula format</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># BCVWPID components:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># BB    = Book (01-66, zero-padded)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># CCC   = Chapter (zero-padded)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># VVV   = Verse (zero-padded)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># WWW   = Word index (zero-padded)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># P     = Part index (optional, for subword tokens)</span></span></code></pre></div>
+<h3 id="scripture-burrito-format">Scripture Burrito Format</h3>
+<p>Alignment data is organized hierarchically:</p>
+<pre><code>AlignmentGroup
+├── metadata (Metadata)
+├── documents (tuple of Document)
+├── roles (source, target)
+└── records (list of AlignmentRecord)
+    ├── meta (Metadata)
+    ├── references (dict)
+    │   ├── source (AlignmentReference)
+    │   └── target (AlignmentReference)
+    └── type (TranslationType)</code></pre>
+<h3 id="data-flow">Data Flow</h3>
+<h4 id="reading-alignment-data">Reading Alignment Data</h4>
+<pre><code>TSV Files → Readers → Token Objects → Manager → VerseData
+  ├── sources/{sourceid}.tsv → SourceReader → Source tokens
+  ├── targets/{targetid}/{canon}_{targetid}.tsv → TargetReader → Target tokens
+  └── alignments/{targetid}/{sourceid}-{targetid}-{alt}.json → AlignmentsReader → AlignmentRecords</code></pre>
+<h4 id="writing-alignment-data">Writing Alignment Data</h4>
+<pre><code>AlignmentGroup → write_alignment_group() → JSON file</code></pre>
+<h2 id="module-structure">Module Structure</h2>
+<pre><code>burrito/
+├── __init__.py              # Public API exports
+├── BaseToken.py             # Base class for Source and Target
+├── source.py                # Source token management (manuscript)
+├── target.py                # Target token management (translation)
+├── AlignmentGroup.py        # Scripture Burrito data structures
+├── AlignmentRecord.py       # Individual alignment records
+├── AlignmentSet.py          # Configuration for alignment data sets
+├── AlignmentType.py         # Type system (translation, related, etc.)
+├── alignments.py            # Reading/writing alignment records
+├── manager.py               # Manager: coordinates all data reading
+├── VerseData.py             # Verse-level alignment container
+├── BadRecord.py             # Error detection and reporting
+└── util.py                  # Utility functions (grouping, filtering)</code></pre>
+<h2 id="key-classes">Key Classes</h2>
+<h3 id="basetoken">BaseToken</h3>
+<p>Base class for both <code>Source</code> and <code>Target</code>
+tokens.</p>
+<p><strong>Key Attributes:</strong></p>
+<ul>
+<li><code>id</code>: BCVWPID identifier</li>
+<li><code>text</code>: Surface form of the word</li>
+<li><code>altId</code>: Alternate identifier (often text with
+index)</li>
+<li><code>aligned</code>: Boolean flag for display purposes</li>
+<li><code>text_unique</code>: Variant text for disambiguation</li>
+</ul>
+<p><strong>Key Properties:</strong></p>
+<ul>
+<li><code>bcv</code>: BCV-format verse reference (e.g., “40001001”)</li>
+<li><code>bare_id</code>: ID without Macula prefix</li>
+<li><code>isempty</code>: True if text is empty string</li>
+</ul>
+<h3 id="source">Source</h3>
+<p>Represents a source manuscript token (Greek/Hebrew).</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li>All BaseToken attributes, plus:</li>
+<li><code>strong</code>: Strong’s number (normalized, e.g.,
+“G0001”)</li>
+<li><code>gloss</code>: English gloss</li>
+<li><code>gloss2</code>: Alternate language gloss</li>
+<li><code>lemma</code>: Source language lemma</li>
+<li><code>pos</code>: Part of speech (noun, verb, adj, adv, etc.)</li>
+<li><code>morph</code>: Morphological information</li>
+<li><code>required</code>: Whether token should be aligned</li>
+</ul>
+<p><strong>Key Methods:</strong></p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if token is content-bearing</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>source.is_content  <span class="co"># True for noun, verb, adj, adv</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Get Macula-prefixed ID</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>source.maculaid  <span class="co"># Returns &quot;n40001001001&quot; or &quot;o01001001001&quot;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Export as dictionary</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>source.asdict(omittext<span class="op">=</span><span class="va">False</span>, essential<span class="op">=</span><span class="va">False</span>)</span></code></pre></div>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> SourceReader, SOURCES</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>src <span class="op">=</span> SourceReader(SOURCES <span class="op">/</span> <span class="st">&quot;SBLGNT.tsv&quot;</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>token <span class="op">=</span> src[<span class="st">&quot;40001001001&quot;</span>]  <span class="co"># Matthew 1:1, word 1</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.text)           <span class="co"># &quot;Βίβλος&quot;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.lemma)          <span class="co"># &quot;βίβλος&quot;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.gloss)          <span class="co"># &quot;Book&quot;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.pos)            <span class="co"># &quot;noun&quot;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.strong)         <span class="co"># &quot;G0976&quot;</span></span></code></pre></div>
+<h3 id="target">Target</h3>
+<p>Represents a target translation token.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li>All BaseToken attributes, plus:</li>
+<li><code>source_verse</code>: BCV of corresponding source verse</li>
+<li><code>skip_space_after</code>: No space after this token in
+display</li>
+<li><code>exclude</code>: Token should not be eligible for
+alignment</li>
+<li><code>required</code>: Token should be aligned</li>
+<li><code>transType</code>: Translation type marker</li>
+<li><code>isPunc</code>: Is this token punctuation?</li>
+<li><code>isPrimary</code>: Primary word for multi-word alignments</li>
+</ul>
+<p><strong>Key Methods:</strong></p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if source verse matches token verse</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>target.same_source_verse  <span class="co"># False indicates versification differences</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if token is punctuation</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>target.ispunc_token</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Export as dictionary</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>target.asdict(fields<span class="op">=</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;text&quot;</span>, <span class="st">&quot;exclude&quot;</span>), omitfalse<span class="op">=</span><span class="va">True</span>)</span></code></pre></div>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> TargetReader, CLEARROOT</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>tr <span class="op">=</span> TargetReader(CLEARROOT <span class="op">/</span> <span class="st">&quot;alignments-eng/data/targets/BSB/nt_BSB.tsv&quot;</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>token <span class="op">=</span> tr[<span class="st">&quot;40001001001&quot;</span>]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.text)           <span class="co"># &quot;book&quot;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.source_verse)   <span class="co"># &quot;40001001&quot;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.exclude)        <span class="co"># False</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token.isPunc)         <span class="co"># False</span></span></code></pre></div>
+<h3 id="alignmentset">AlignmentSet</h3>
+<p>Configuration for a set of alignment files.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><code>sourceid</code>: Source manuscript ID (e.g., “SBLGNT”,
+“OSHB”)</li>
+<li><code>targetid</code>: Target translation ID (e.g., “BSB”,
+“NIV”)</li>
+<li><code>targetlanguage</code>: ISO 639-3 language code (e.g., “eng”,
+“fra”)</li>
+<li><code>langdatapath</code>: Path to language-specific data
+directory</li>
+<li><code>alternateid</code>: Alternate version ID (e.g., “manual”,
+“auto”)</li>
+</ul>
+<p><strong>Computed Paths:</strong></p>
+<ul>
+<li><code>sourcepath</code>: Path to source TSV file</li>
+<li><code>targetpath</code>: Path to target TSV file</li>
+<li><code>alignmentpath</code>: Path to alignment JSON file</li>
+<li><code>tomlpath</code>: Path to TOML metadata file</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> AlignmentSet, CLEARROOT</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>alset <span class="op">=</span> AlignmentSet(</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    sourceid<span class="op">=</span><span class="st">&quot;SBLGNT&quot;</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    targetid<span class="op">=</span><span class="st">&quot;BSB&quot;</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    targetlanguage<span class="op">=</span><span class="st">&quot;eng&quot;</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    langdatapath<span class="op">=</span>CLEARROOT <span class="op">/</span> <span class="st">&quot;alignments-eng/data&quot;</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    alternateid<span class="op">=</span><span class="st">&quot;manual&quot;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(alset.identifier)      <span class="co"># &quot;SBLGNT-BSB-manual&quot;</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(alset.canon)           <span class="co"># &quot;nt&quot;</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>alset.check_files()          <span class="co"># Verify all files exist</span></span></code></pre></div>
+<h3 id="manager">Manager</h3>
+<p>Coordinates reading of source, target, and alignment data. Acts as a
+dictionary mapping BCV identifiers to <code>VerseData</code>
+instances.</p>
+<p><strong>Initialization:</strong></p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> Manager, AlignmentSet, CLEARROOT</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>alset <span class="op">=</span> AlignmentSet(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    sourceid<span class="op">=</span><span class="st">&quot;SBLGNT&quot;</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    targetid<span class="op">=</span><span class="st">&quot;BSB&quot;</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    targetlanguage<span class="op">=</span><span class="st">&quot;eng&quot;</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    langdatapath<span class="op">=</span>CLEARROOT <span class="op">/</span> <span class="st">&quot;alignments-eng/data&quot;</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>mgr <span class="op">=</span> Manager(alset)</span></code></pre></div>
+<p><strong>Key Attributes:</strong></p>
+<ul>
+<li><code>sourceitems</code>: SourceReader with all source tokens</li>
+<li><code>targetitems</code>: TargetReader with all target tokens</li>
+<li><code>alignmentsreader</code>: AlignmentsReader with all alignment
+records</li>
+<li><code>bcv</code>: Dict organizing data by BCV reference</li>
+<li><code>data</code>: Dict mapping BCV → VerseData (same as
+<code>self</code>)</li>
+</ul>
+<p><strong>Accessing Data:</strong></p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get verse data</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>verse <span class="op">=</span> mgr[<span class="st">&quot;40001001&quot;</span>]  <span class="co"># Returns VerseData for Matthew 1:1</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Search for alignments containing a term</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>records <span class="op">=</span> mgr.token_alignments(<span class="st">&quot;Ἰησοῦς&quot;</span>, role<span class="op">=</span><span class="st">&quot;source&quot;</span>, tokenattr<span class="op">=</span><span class="st">&quot;text&quot;</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Display a specific record</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(mgr.display_record(records[<span class="dv">0</span>]))</span></code></pre></div>
+<p><strong>Bad Records:</strong></p>
+<p>The Manager automatically detects and reports malformed alignment
+records:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Access bad records found during data loading</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>bad <span class="op">=</span> mgr.alignmentsreader.badrecords</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Dict: record_id → list of BadRecord instances</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Common reasons for bad records:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co"># - NOSOURCE: No source selectors</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># - NOTARGET: No target selectors</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co"># - DUPLICATESOURCE: Source token aligned multiple times</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co"># - DUPLICATETARGET: Target token aligned multiple times</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co"># - MISSINGSOURCE: Source token ID not found</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co"># - MISSINGTARGET: Target token ID not found</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co"># - ALIGNEDEXCLUDE: Excluded token is aligned</span></span></code></pre></div>
+<h3 id="versedata">VerseData</h3>
+<p>Manages alignments, sources, and targets for a single verse.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><code>bcvid</code>: Verse identifier (e.g., “40001001”)</li>
+<li><code>alignments</code>: List of (sources, targets) tuple pairs</li>
+<li><code>records</code>: Tuple of AlignmentRecord instances</li>
+<li><code>sources</code>: List of Source tokens</li>
+<li><code>targets</code>: List of Target tokens</li>
+<li><code>targets_included</code>: Tuple of non-excluded Target
+tokens</li>
+</ul>
+<p><strong>Key Methods:</strong></p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get alignment pairs (flattened, with repetition)</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>pairs <span class="op">=</span> verse.get_pairs(essential<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Returns: [(Source, Target), (Source, Target), ...]</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># With essential=True, only content words (noun, verb, adj, adv)</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>content_pairs <span class="op">=</span> verse.get_pairs(essential<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Display alignments</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>verse.display(termsonly<span class="op">=</span><span class="va">False</span>)  <span class="co"># Full token details</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>verse.display(termsonly<span class="op">=</span><span class="va">True</span>)   <span class="co"># Just text strings</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>verse.table()                    <span class="co"># Tab-separated table</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Get text lists</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>source_texts <span class="op">=</span> verse.get_texts(typeattr<span class="op">=</span><span class="st">&quot;sources&quot;</span>)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>target_texts <span class="op">=</span> verse.get_texts(typeattr<span class="op">=</span><span class="st">&quot;targets&quot;</span>, keepexcluded<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>unique_texts <span class="op">=</span> verse.get_texts(typeattr<span class="op">=</span><span class="st">&quot;targets&quot;</span>, unique<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Create alignment matrix as pandas DataFrame</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> verse.dataframe(hitmark<span class="op">=</span><span class="st">&quot;X&quot;</span>, missmark<span class="op">=</span><span class="st">&quot; &quot;</span>)</span></code></pre></div>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>verse <span class="op">=</span> mgr[<span class="st">&quot;40001001&quot;</span>]  <span class="co"># Matthew 1:1</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Explore the verse</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Sources: </span><span class="sc">{</span><span class="bu">len</span>(verse.sources)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Targets: </span><span class="sc">{</span><span class="bu">len</span>(verse.targets)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Alignments: </span><span class="sc">{</span><span class="bu">len</span>(verse.alignments)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Display alignments</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>verse.table()</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Output:</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Βίβλος    book</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="co"># γενέσεως  of the genealogy</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Get alignment pairs</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> src, trg <span class="kw">in</span> verse.get_pairs():</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="sc">{</span>src<span class="sc">.</span>text<span class="sc">}</span><span class="ss"> → </span><span class="sc">{</span>trg<span class="sc">.</span>text<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+<h3 id="alignmentgroup">AlignmentGroup</h3>
+<p>Top-level container for a complete set of alignment records.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><code>documents</code>: Tuple of (source Document, target
+Document)</li>
+<li><code>meta</code>: Metadata for the group</li>
+<li><code>records</code>: List of AlignmentRecord instances</li>
+<li><code>roles</code>: Tuple of role names (“source”, “target”)</li>
+<li><code>canon</code>: Canon identifier (“ot” or “nt”)</li>
+</ul>
+<p><strong>Methods:</strong></p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Export to dict for serialization</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>group_dict <span class="op">=</span> group.asdict(hoist<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Get verse-level records</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>verse_records <span class="op">=</span> group.verserecords()</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Returns: dict mapping BCV → list of AlignmentRecords</span></span></code></pre></div>
+<p><strong>Writing to JSON:</strong></p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> write_alignment_group</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&quot;output.json&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    write_alignment_group(group, f)</span></code></pre></div>
+<h3 id="alignmentrecord">AlignmentRecord</h3>
+<p>Individual alignment linking source and target tokens.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><code>meta</code>: Metadata instance (includes id, status, origin,
+note)</li>
+<li><code>references</code>: Dict with keys “source” and “target”
+<ul>
+<li>Values are AlignmentReference instances</li>
+</ul></li>
+<li><code>type</code>: TranslationType instance</li>
+</ul>
+<p><strong>Key Properties:</strong></p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>record.identifier           <span class="co"># Record ID from metadata</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>record.source_selectors     <span class="co"># List of source token IDs</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>record.target_selectors     <span class="co"># List of target token IDs</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>record.source_bcv           <span class="co"># BCV of source verse</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>record.incomplete           <span class="co"># True if any selectors are &quot;MISSING&quot;</span></span></code></pre></div>
+<p><strong>Methods:</strong></p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Export as dictionary</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>rec_dict <span class="op">=</span> record.asdict(</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    positional<span class="op">=</span><span class="va">False</span>,           <span class="co"># Use role names as keys</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    withmeta<span class="op">=</span><span class="va">True</span>,              <span class="co"># Include metadata</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    withmaculaprefix<span class="op">=</span><span class="va">True</span>       <span class="co"># Add &#39;n&#39;/&#39;o&#39; prefix to source IDs</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<h3 id="utility-functions">Utility Functions</h3>
+<p><strong>Grouping Functions:</strong></p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> util</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Group tokens by BCV</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>bcv_dict <span class="op">=</span> util.groupby_bcv(token_list)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Returns: dict[str, list[Token]]</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Group by book-chapter only</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>bc_dict <span class="op">=</span> util.token_groupby_bc(token_list)</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Group by arbitrary key</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>grouped <span class="op">=</span> util.groupby_key(items, key<span class="op">=</span><span class="kw">lambda</span> x: x.some_attribute)</span></code></pre></div>
+<p><strong>Filtering:</strong></p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter items by BCV range</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>subset <span class="op">=</span> util.filter_by_bcv(</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    items,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    startbcv<span class="op">=</span><span class="st">&quot;40001001&quot;</span>,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    endbcv<span class="op">=</span><span class="st">&quot;40002023&quot;</span>,</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    key<span class="op">=</span><span class="kw">lambda</span> item: item.bcv</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>ID Manipulation:</strong></p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> macula_prefixer, macula_unprefixer, bare_id</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Add Macula prefix (n/o)</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>prefixed <span class="op">=</span> macula_prefixer(<span class="st">&quot;40001001001&quot;</span>)    <span class="co"># &quot;n40001001001&quot;</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove Macula prefix</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>unprefixed <span class="op">=</span> macula_unprefixer(<span class="st">&quot;n40001001001&quot;</span>)  <span class="co"># &quot;40001001001&quot;</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove any canon prefix</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>bare <span class="op">=</span> bare_id(<span class="st">&quot;n40001001001&quot;</span>)               <span class="co"># &quot;40001001001&quot;</span></span></code></pre></div>
+<p><strong>Boolean Conversion:</strong></p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> asbool</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert boolean to minimal string</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>asbool(<span class="va">True</span>)   <span class="co"># &quot;y&quot;</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>asbool(<span class="va">False</span>)  <span class="co"># &quot;n&quot;</span></span></code></pre></div>
+<h2 id="common-workflows">Common Workflows</h2>
+<h3 id="loading-and-exploring-alignment-data">1. Loading and Exploring
+Alignment Data</h3>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> Manager, AlignmentSet, CLEARROOT</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure alignment set</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>alset <span class="op">=</span> AlignmentSet(</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    sourceid<span class="op">=</span><span class="st">&quot;SBLGNT&quot;</span>,</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    targetid<span class="op">=</span><span class="st">&quot;BSB&quot;</span>,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    targetlanguage<span class="op">=</span><span class="st">&quot;eng&quot;</span>,</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    langdatapath<span class="op">=</span>CLEARROOT <span class="op">/</span> <span class="st">&quot;alignments-eng/data&quot;</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Load all data</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>mgr <span class="op">=</span> Manager(alset)</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Access specific verse</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>verse <span class="op">=</span> mgr[<span class="st">&quot;40001001&quot;</span>]  <span class="co"># Matthew 1:1</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>verse.display()</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Explore sources and targets</span></span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Source tokens: </span><span class="sc">{</span><span class="bu">len</span>(mgr.sourceitems)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Target tokens: </span><span class="sc">{</span><span class="bu">len</span>(mgr.targetitems)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Verses with alignments: </span><span class="sc">{</span><span class="bu">len</span>(mgr)<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+<h3 id="searching-for-specific-terms">2. Searching for Specific
+Terms</h3>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find all alignments containing a Greek term</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>jesus_alignments <span class="op">=</span> mgr.token_alignments(</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Ἰησοῦς&quot;</span>,</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    role<span class="op">=</span><span class="st">&quot;source&quot;</span>,</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    tokenattr<span class="op">=</span><span class="st">&quot;text&quot;</span>,</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    lowercase<span class="op">=</span><span class="va">False</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Found </span><span class="sc">{</span><span class="bu">len</span>(jesus_alignments)<span class="sc">}</span><span class="ss"> alignments&quot;</span>)</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> rec <span class="kw">in</span> jesus_alignments[:<span class="dv">5</span>]:  <span class="co"># First 5</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(mgr.display_record(rec))</span></code></pre></div>
+<h3 id="exporting-alignment-data">3. Exporting Alignment Data</h3>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> write_alignment_group</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the alignment group</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>group <span class="op">=</span> mgr.alignmentsreader.alignmentgroup</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Write to JSON</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&quot;output-alignments.json&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    write_alignment_group(group, f)</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Export filtered by books</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>filtered_group <span class="op">=</span> mgr.alignmentsreader.filter_books(keep<span class="op">=</span>(<span class="st">&quot;40&quot;</span>, <span class="st">&quot;41&quot;</span>))  <span class="co"># MAT, MRK</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&quot;output-gospels.json&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>    write_alignment_group(filtered_group, f)</span></code></pre></div>
+<h3 id="working-with-source-tokens">4. Working with Source Tokens</h3>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> SourceReader, SOURCES</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Load source data</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>src <span class="op">=</span> SourceReader(SOURCES <span class="op">/</span> <span class="st">&quot;SBLGNT.tsv&quot;</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Get token by ID</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>token <span class="op">=</span> src[<span class="st">&quot;40001001001&quot;</span>]</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Get vocabulary</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>vocab <span class="op">=</span> src.vocabulary(tokenattr<span class="op">=</span><span class="st">&quot;lemma&quot;</span>, lower<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Lemma vocabulary size: </span><span class="sc">{</span><span class="bu">len</span>(vocab)<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Find tokens by term</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>tokens <span class="op">=</span> src.term_tokens(<span class="st">&quot;ἀγάπη&quot;</span>, tokenattr<span class="op">=</span><span class="st">&quot;lemma&quot;</span>, lowercase<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Found </span><span class="sc">{</span><span class="bu">len</span>(tokens)<span class="sc">}</span><span class="ss"> instances of ἀγάπη&quot;</span>)</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Get book-level counts</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>book_counts <span class="op">=</span> src.book_token_counts()</span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>type_counts <span class="op">=</span> src.book_type_counts(tokenattr<span class="op">=</span><span class="st">&quot;lemma&quot;</span>)</span></code></pre></div>
+<h3 id="working-with-target-tokens">5. Working with Target Tokens</h3>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> TargetReader, CLEARROOT</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Load target data</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>tr <span class="op">=</span> TargetReader(</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    CLEARROOT <span class="op">/</span> <span class="st">&quot;alignments-eng/data/targets/BSB/nt_BSB.tsv&quot;</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    detect_punc<span class="op">=</span><span class="va">True</span>  <span class="co"># Auto-detect punctuation</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Get token</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>token <span class="op">=</span> tr[<span class="st">&quot;40001001001&quot;</span>]</span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Find term occurrences</span></span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>love_tokens <span class="op">=</span> tr.term_tokens(<span class="st">&quot;love&quot;</span>, tokenattr<span class="op">=</span><span class="st">&quot;text&quot;</span>, lowercase<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Get source verse mappings (handles versification differences)</span></span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>source_bcvs <span class="op">=</span> tr.get_source_bcvs()</span></code></pre></div>
+<h3 id="writing-target-tokens">6. Writing Target Tokens</h3>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> TargetReader</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Load tokens</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>tr <span class="op">=</span> TargetReader(input_path)</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Define custom exclude function</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> should_exclude(token):</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> token.isPunc <span class="kw">or</span> token.text <span class="op">==</span> <span class="st">&quot;&quot;</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Write with custom fields</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>TargetReader.write_tsv(</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    tokenlist<span class="op">=</span><span class="bu">list</span>(tr.values()),</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>    outpath<span class="op">=</span>Path(<span class="st">&quot;output/targets.tsv&quot;</span>),</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>    excludefn<span class="op">=</span>should_exclude,</span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>    fields<span class="op">=</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;text&quot;</span>, <span class="st">&quot;source_verse&quot;</span>, <span class="st">&quot;skip_space_after&quot;</span>, <span class="st">&quot;exclude&quot;</span>)</span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<h3 id="comparing-alignment-sets">7. Comparing Alignment Sets</h3>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> Manager, AlignmentSet, CLEARROOT</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Load two alignment sets</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>alset1 <span class="op">=</span> AlignmentSet(sourceid<span class="op">=</span><span class="st">&quot;SBLGNT&quot;</span>, targetid<span class="op">=</span><span class="st">&quot;BSB&quot;</span>, targetlanguage<span class="op">=</span><span class="st">&quot;eng&quot;</span>,</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>                      langdatapath<span class="op">=</span>CLEARROOT <span class="op">/</span> <span class="st">&quot;alignments-eng/data&quot;</span>)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>alset2 <span class="op">=</span> AlignmentSet(sourceid<span class="op">=</span><span class="st">&quot;SBLGNT&quot;</span>, targetid<span class="op">=</span><span class="st">&quot;BSB&quot;</span>, targetlanguage<span class="op">=</span><span class="st">&quot;eng&quot;</span>,</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>                      langdatapath<span class="op">=</span>CLEARROOT <span class="op">/</span> <span class="st">&quot;alignments-eng/data&quot;</span>,</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>                      alternateid<span class="op">=</span><span class="st">&quot;auto&quot;</span>)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>mgr1 <span class="op">=</span> Manager(alset1)</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>mgr2 <span class="op">=</span> Manager(alset2)</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare a specific verse</span></span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>verse1 <span class="op">=</span> mgr1[<span class="st">&quot;40001001&quot;</span>]</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>verse2 <span class="op">=</span> mgr2[<span class="st">&quot;40001001&quot;</span>]</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>diffs <span class="op">=</span> verse1.diff(verse2)</span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> diffs:</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> diff <span class="kw">in</span> diffs:</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(diff)</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;No differences found&quot;</span>)</span></code></pre></div>
+<h3 id="creating-alignment-records-programmatically">8. Creating
+Alignment Records Programmatically</h3>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> (</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    AlignmentGroup, AlignmentRecord, AlignmentReference,</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    Document, Metadata, TranslationType</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Create documents</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>source_doc <span class="op">=</span> Document(docid<span class="op">=</span><span class="st">&quot;SBLGNT&quot;</span>, scheme<span class="op">=</span><span class="st">&quot;BCVWP&quot;</span>)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>target_doc <span class="op">=</span> Document(docid<span class="op">=</span><span class="st">&quot;BSB&quot;</span>, scheme<span class="op">=</span><span class="st">&quot;BCVW&quot;</span>)</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Create metadata</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>group_meta <span class="op">=</span> Metadata(</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    creator<span class="op">=</span><span class="st">&quot;My Organization&quot;</span>,</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    created<span class="op">=</span>datetime.now(),</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>    conformsTo<span class="op">=</span><span class="st">&quot;0.3.1&quot;</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Create alignment records</span></span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>records <span class="op">=</span> []</span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> alignment_data <span class="kw">in</span> my_alignment_data:</span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>    rec_meta <span class="op">=</span> Metadata(</span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>        <span class="bu">id</span><span class="op">=</span>alignment_data[<span class="st">&#39;id&#39;</span>],</span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>        origin<span class="op">=</span><span class="st">&quot;manual&quot;</span>,</span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>        status<span class="op">=</span><span class="st">&quot;created&quot;</span></span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>    source_ref <span class="op">=</span> AlignmentReference(</span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a>        document<span class="op">=</span>source_doc,</span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a>        selectors<span class="op">=</span>alignment_data[<span class="st">&#39;source_ids&#39;</span>]</span>
+<span id="cb31-29"><a href="#cb31-29" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb31-30"><a href="#cb31-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-31"><a href="#cb31-31" aria-hidden="true" tabindex="-1"></a>    target_ref <span class="op">=</span> AlignmentReference(</span>
+<span id="cb31-32"><a href="#cb31-32" aria-hidden="true" tabindex="-1"></a>        document<span class="op">=</span>target_doc,</span>
+<span id="cb31-33"><a href="#cb31-33" aria-hidden="true" tabindex="-1"></a>        selectors<span class="op">=</span>alignment_data[<span class="st">&#39;target_ids&#39;</span>]</span>
+<span id="cb31-34"><a href="#cb31-34" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb31-35"><a href="#cb31-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-36"><a href="#cb31-36" aria-hidden="true" tabindex="-1"></a>    record <span class="op">=</span> AlignmentRecord(</span>
+<span id="cb31-37"><a href="#cb31-37" aria-hidden="true" tabindex="-1"></a>        meta<span class="op">=</span>rec_meta,</span>
+<span id="cb31-38"><a href="#cb31-38" aria-hidden="true" tabindex="-1"></a>        references<span class="op">=</span>{<span class="st">&quot;source&quot;</span>: source_ref, <span class="st">&quot;target&quot;</span>: target_ref},</span>
+<span id="cb31-39"><a href="#cb31-39" aria-hidden="true" tabindex="-1"></a>        <span class="bu">type</span><span class="op">=</span>TranslationType()</span>
+<span id="cb31-40"><a href="#cb31-40" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb31-41"><a href="#cb31-41" aria-hidden="true" tabindex="-1"></a>    records.append(record)</span>
+<span id="cb31-42"><a href="#cb31-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-43"><a href="#cb31-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Create group</span></span>
+<span id="cb31-44"><a href="#cb31-44" aria-hidden="true" tabindex="-1"></a>group <span class="op">=</span> AlignmentGroup(</span>
+<span id="cb31-45"><a href="#cb31-45" aria-hidden="true" tabindex="-1"></a>    documents<span class="op">=</span>(source_doc, target_doc),</span>
+<span id="cb31-46"><a href="#cb31-46" aria-hidden="true" tabindex="-1"></a>    meta<span class="op">=</span>group_meta,</span>
+<span id="cb31-47"><a href="#cb31-47" aria-hidden="true" tabindex="-1"></a>    records<span class="op">=</span>records</span>
+<span id="cb31-48"><a href="#cb31-48" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb31-49"><a href="#cb31-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-50"><a href="#cb31-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Write to file</span></span>
+<span id="cb31-51"><a href="#cb31-51" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> write_alignment_group</span>
+<span id="cb31-52"><a href="#cb31-52" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&quot;new-alignments.json&quot;</span>, <span class="st">&quot;w&quot;</span>) <span class="im">as</span> f:</span>
+<span id="cb31-53"><a href="#cb31-53" aria-hidden="true" tabindex="-1"></a>    write_alignment_group(group, f)</span></code></pre></div>
+<h3 id="validating-alignment-data">9. Validating Alignment Data</h3>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Bad records are automatically detected during Manager initialization</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>mgr <span class="op">=</span> Manager(alset, keepbadrecords<span class="op">=</span><span class="va">False</span>)  <span class="co"># Default: drops bad records</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Access bad records</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> mgr.alignmentsreader.badrecords:</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Found </span><span class="sc">{</span><span class="bu">len</span>(mgr.alignmentsreader.badrecords)<span class="sc">}</span><span class="ss"> bad records&quot;</span>)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Group by reason</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>    <span class="im">from</span> collections <span class="im">import</span> defaultdict</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>    by_reason <span class="op">=</span> defaultdict(<span class="bu">list</span>)</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> rec_id, bad_list <span class="kw">in</span> mgr.alignmentsreader.badrecords.items():</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> bad <span class="kw">in</span> bad_list:</span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>            by_reason[bad.reason].append(bad)</span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Display by reason</span></span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> reason, bads <span class="kw">in</span> by_reason.items():</span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f&quot;</span><span class="ch">\n</span><span class="sc">{</span>reason<span class="sc">.</span>value<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span><span class="bu">len</span>(bads)<span class="sc">}</span><span class="ss"> records&quot;</span>)</span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> bad <span class="kw">in</span> bads[:<span class="dv">3</span>]:  <span class="co"># Show first 3</span></span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f&quot;  </span><span class="sc">{</span>bad<span class="sc">.</span>display<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+<h3 id="working-with-verse-data-dataframe">10. Working with Verse Data
+DataFrame</h3>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>verse <span class="op">=</span> mgr[<span class="st">&quot;40001001&quot;</span>]</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Create alignment matrix</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> verse.dataframe(hitmark<span class="op">=</span><span class="st">&quot;✓&quot;</span>, missmark<span class="op">=</span><span class="st">&quot;&quot;</span>)</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Display in notebook</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>display(df)</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Export to CSV</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>df.to_csv(<span class="st">&quot;alignment-matrix.csv&quot;</span>)</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Analyze alignment patterns</span></span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>alignment_counts <span class="op">=</span> (df <span class="op">==</span> <span class="st">&quot;✓&quot;</span>).<span class="bu">sum</span>()</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Alignments per target word:</span><span class="ch">\n</span><span class="sc">{</span>alignment_counts<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+<h2 id="api-reference">API Reference</h2>
+<h3 id="constants">Constants</h3>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib <span class="im">import</span> CLEARROOT, SOURCES</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="co"># CLEARROOT: Path to Clear-Bible repositories root</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># SOURCES: Path to source TSV files</span></span></code></pre></div>
+<h3 id="exported-classes-and-functions">Exported Classes and
+Functions</h3>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> (</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Token classes</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>    BaseToken, Source, Target,</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Readers</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    SourceReader, TargetReader, AlignmentsReader,</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Configuration</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>    AlignmentSet,</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Management</span></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>    Manager, VerseData,</span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Alignment structures</span></span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>    AlignmentGroup, AlignmentRecord, AlignmentReference,</span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>    Document, Metadata,</span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Types</span></span>
+<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a>    TranslationType,</span>
+<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-21"><a href="#cb35-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Utilities</span></span>
+<span id="cb35-22"><a href="#cb35-22" aria-hidden="true" tabindex="-1"></a>    asbool, bare_id,</span>
+<span id="cb35-23"><a href="#cb35-23" aria-hidden="true" tabindex="-1"></a>    macula_prefixer, macula_unprefixer,</span>
+<span id="cb35-24"><a href="#cb35-24" aria-hidden="true" tabindex="-1"></a>    groupby_key, groupby_bcv, groupby_bcid, token_groupby_bc,</span>
+<span id="cb35-25"><a href="#cb35-25" aria-hidden="true" tabindex="-1"></a>    filter_by_bcv,</span>
+<span id="cb35-26"><a href="#cb35-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># I/O</span></span>
+<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a>    write_alignment_group,</span>
+<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<h3 id="error-handling">Error Handling</h3>
+<p>The module defines error types for malformed alignment records:</p>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito.BadRecord <span class="im">import</span> Reason, BadRecord</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Reason enum values:</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>Reason.NOSOURCE              <span class="co"># No source selectors</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>Reason.NOTARGET              <span class="co"># No target selectors</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>Reason.EMPTYSOURCE           <span class="co"># Empty string in source selectors</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>Reason.EMPTYTARGET           <span class="co"># Empty string in target selectors</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>Reason.DUPLICATESOURCE       <span class="co"># Source token in multiple records</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>Reason.DUPLICATETARGET       <span class="co"># Target token in multiple records</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>Reason.MISSINGSOURCE         <span class="co"># Source token ID not found</span></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>Reason.MISSINGTARGETSOME     <span class="co"># Some target IDs not found</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>Reason.MISSINGTARGETALL      <span class="co"># All target IDs not found</span></span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>Reason.ALIGNEDEXCLUDE        <span class="co"># Excluded token is aligned</span></span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a>Reason.UNKNOWN               <span class="co"># Uncategorized error</span></span></code></pre></div>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="always-use-manager-for-complete-data-access">1. Always Use
+Manager for Complete Data Access</h3>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ✓ Good: Manager coordinates all data</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>mgr <span class="op">=</span> Manager(alset)</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ✗ Avoid: Reading individual files separately</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="co"># (unless you have a specific need)</span></span></code></pre></div>
+<h3 id="check-for-bad-records">2. Check for Bad Records</h3>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>mgr <span class="op">=</span> Manager(alset)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> mgr.alignmentsreader.badrecords:</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Warning: </span><span class="sc">{</span><span class="bu">len</span>(mgr.alignmentsreader.badrecords)<span class="sc">}</span><span class="ss"> bad records found&quot;</span>)</span></code></pre></div>
+<h3 id="use-appropriate-id-formats">3. Use Appropriate ID Formats</h3>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Internal: no prefix, no part index (for most operations)</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>token_id <span class="op">=</span> <span class="st">&quot;40001001001&quot;</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Macula format: with prefix (for export to Macula systems)</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>macula_id <span class="op">=</span> <span class="st">&quot;n40001001001&quot;</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Always normalize when comparing</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> biblealignlib.burrito <span class="im">import</span> bare_id</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>normalized <span class="op">=</span> bare_id(some_id)  <span class="co"># Removes prefix if present</span></span></code></pre></div>
+<h3 id="handle-versification-differences">4. Handle Versification
+Differences</h3>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Target tokens may reference different source verses</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>target <span class="op">=</span> tr[<span class="st">&quot;44019041001&quot;</span>]</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> target.same_source_verse:</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Versification difference: </span><span class="sc">{</span>target<span class="sc">.</span>bcv<span class="sc">}</span><span class="ss"> → </span><span class="sc">{</span>target<span class="sc">.</span>source_verse<span class="sc">}</span><span class="ss">&quot;</span>)</span></code></pre></div>
+<h3 id="use-versedata-for-verse-level-operations">5. Use VerseData for
+Verse-level Operations</h3>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ✓ Good: Work with complete verse data</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>verse <span class="op">=</span> mgr[<span class="st">&quot;40001001&quot;</span>]</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> src_list, trg_list <span class="kw">in</span> verse.alignments:</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    process_alignment(src_list, trg_list)</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ✗ Avoid: Manual grouping of records</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="co"># (unless you need very specific control)</span></span></code></pre></div>
+<h3 id="validate-before-writing">6. Validate Before Writing</h3>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data integrity before exporting</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>mgr.check_integrity()</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify alignment group</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">len</span>(group.records) <span class="op">&gt;</span> <span class="dv">0</span>, <span class="st">&quot;No records to write&quot;</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> group.canon <span class="kw">in</span> (<span class="st">&quot;ot&quot;</span>, <span class="st">&quot;nt&quot;</span>), <span class="ss">f&quot;Invalid canon: </span><span class="sc">{</span>group<span class="sc">.</span>canon<span class="sc">}</span><span class="ss">&quot;</span></span></code></pre></div>
+<h2 id="additional-resources">Additional Resources</h2>
+<ul>
+<li><strong>Scripture Burrito Specification</strong>:
+https://docs.google.com/document/d/1zR5gsrm3gIoNiHVBlWz5_BBw3N-Ew1-4M5rMsFrPzSw/</li>
+<li><strong>Clear-Bible Alignments</strong>:
+https://github.com/Clear-Bible/Alignments</li>
+<li><strong>biblelib Package</strong>: Used for BCVWPID identifier
+management</li>
+<li><strong>CLAUDE.md</strong>: General repository architecture and
+development guidelines</li>
+</ul>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><code>biblealignlib.autoalign</code>: Automated alignment
+generation</li>
+<li><code>biblealignlib.interlinear</code>: Interlinear display
+generation</li>
+<li><code>biblealignlib.util</code>: General utilities for Bible
+data</li>
+</ul>
+
+</body>
+</html>
