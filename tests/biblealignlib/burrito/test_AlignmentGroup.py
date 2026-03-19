@@ -253,6 +253,37 @@ class TestAlignmentRecord:
         for role in record.roles:
             assert role in recdict
 
+    def test_update_target_selectors_replaces(self, record: AlignmentRecord) -> None:
+        """update_target_selectors replaces the existing target selectors."""
+        rec = copy.deepcopy(record)
+        rec.update_target_selectors(["410040030031"])
+        assert rec.target_selectors == ["410040030031"]
+
+    def test_update_target_selectors_sorted(self, record: AlignmentRecord) -> None:
+        """update_target_selectors sorts the new selectors."""
+        rec = copy.deepcopy(record)
+        rec.update_target_selectors(["410040030033", "410040030031", "410040030032"])
+        assert rec.target_selectors == ["410040030031", "410040030032", "410040030033"]
+
+    def test_update_target_selectors_empty(self, record: AlignmentRecord) -> None:
+        """update_target_selectors accepts an empty list."""
+        rec = copy.deepcopy(record)
+        rec.update_target_selectors([])
+        assert rec.target_selectors == []
+
+    def test_update_target_selectors_source_unchanged(self, record: AlignmentRecord) -> None:
+        """update_target_selectors does not affect source selectors."""
+        rec = copy.deepcopy(record)
+        original_source = rec.source_selectors[:]
+        rec.update_target_selectors(["410040030099"])
+        assert rec.source_selectors == original_source
+
+    def test_update_target_selectors_reflected_in_references(self, record: AlignmentRecord) -> None:
+        """update_target_selectors is visible via references['target'].selectors."""
+        rec = copy.deepcopy(record)
+        rec.update_target_selectors(["410040030042"])
+        assert rec.references["target"].selectors == ["410040030042"]
+
     def test_asdict_withmeta(self, record: AlignmentRecord) -> None:
         """Test asdict()."""
         recdict = record.asdict(
