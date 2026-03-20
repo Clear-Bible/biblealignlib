@@ -1,7 +1,11 @@
 # biblealignlib
 
-Biblica's code for working with Bible alignment data from
+Biblica's Python code for working with Bible alignment data from
 https://github.com/Clear-Bible/Alignments .
+
+This code is ©2024-2026 by [Biblica, Inc](http://biblica.com) and is
+licensed under [CC BY SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+
 
 ## Installing extra dependencies
 
