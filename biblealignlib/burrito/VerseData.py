@@ -156,6 +156,33 @@ class VerseData:
                 for trg in targets:
                     print(f"Target: {trg._display}")
 
+    def display_record(self, alrec: AlignmentRecord, srcwidth: Optional[int] = None) -> None:
+        """Display an alignment record from this instance.
+
+        srcwidth sets the minimum column width for the source token string;
+        defaults to the length of the source token string (no padding).
+        The source column is left-justified within that width.
+        """
+        source_tokenstring: str = ", ".join(
+            [self.sourceitems[sel].tokenstr for sel in alrec.source_selectors]
+        )
+        target_tokenstring: str = ", ".join(
+            [self.targetitems[sel].tokenstr for sel in alrec.target_selectors]
+        )
+        width = srcwidth if srcwidth is not None else len(source_tokenstring)
+        print(f"{alrec.meta.id}: {source_tokenstring:<{width}} --- {target_tokenstring}")
+
+    def display_records(self) -> None:
+        """Display all alignment records with a consistent source column width."""
+        if not self.records:
+            return
+        srcwidth: int = max(
+            len(", ".join(self.sourceitems[sel].tokenstr for sel in alrec.source_selectors))
+            for alrec in self.records
+        )
+        for alrec in self.records:
+            self.display_record(alrec, srcwidth=srcwidth)
+
     def unaligned(self, typeattr: str = "targets", keepexcluded: bool = False) -> None:
         """Display tokens from typeattr that are _not_ aligned."""
         assert typeattr in self._typeattrs, f"typeattr should be one of {self._typeattrs}"
