@@ -305,6 +305,97 @@ class TestVerseData:
         with pytest.raises(AssertionError):
             vd.diff("not a VerseData")  # type: ignore[arg-type]
 
+    def test_display_record_contains_meta_id(self, mgr: Manager, capsys) -> None:
+        """display_record prints the record's meta.id."""
+        vd: VerseData = mgr["41004003"]
+        alrec = vd.records[0]
+        vd.display_record(alrec)
+        captured = capsys.readouterr()
+        assert alrec.meta.id in captured.out
+
+    def test_display_record_contains_separator(self, mgr: Manager, capsys) -> None:
+        """display_record output contains the ' --- ' separator."""
+        vd: VerseData = mgr["41004003"]
+        vd.display_record(vd.records[0])
+        captured = capsys.readouterr()
+        assert " --- " in captured.out
+
+    def test_display_record_contains_source_tokenstrings(self, mgr: Manager, capsys) -> None:
+        """display_record output contains the tokenstr of each source token."""
+        vd: VerseData = mgr["41004003"]
+        alrec = vd.records[0]
+        vd.display_record(alrec)
+        captured = capsys.readouterr()
+        for sel in alrec.source_selectors:
+            assert vd.sourceitems[sel].tokenstr in captured.out
+
+    def test_display_record_contains_target_tokenstrings(self, mgr: Manager, capsys) -> None:
+        """display_record output contains the tokenstr of each target token."""
+        vd: VerseData = mgr["41004003"]
+        alrec = vd.records[0]
+        vd.display_record(alrec)
+        captured = capsys.readouterr()
+        for sel in alrec.target_selectors:
+            assert vd.targetitems[sel].tokenstr in captured.out
+
+    def test_display_record_format(self, mgr: Manager, capsys) -> None:
+        """display_record with no srcwidth pads to exactly the source string length."""
+        vd: VerseData = mgr["41004003"]
+        alrec = vd.records[0]
+        vd.display_record(alrec)
+        captured = capsys.readouterr()
+        source_str = ", ".join(vd.sourceitems[sel].tokenstr for sel in alrec.source_selectors)
+        target_str = ", ".join(vd.targetitems[sel].tokenstr for sel in alrec.target_selectors)
+        expected = f"{alrec.meta.id}: {source_str} --- {target_str}\n"
+        assert captured.out == expected
+
+    def test_display_record_srcwidth_pads(self, mgr: Manager, capsys) -> None:
+        """display_record with srcwidth wider than source pads with spaces."""
+        vd: VerseData = mgr["41004003"]
+        alrec = vd.records[0]
+        source_str = ", ".join(vd.sourceitems[sel].tokenstr for sel in alrec.source_selectors)
+        wide = len(source_str) + 10
+        vd.display_record(alrec, srcwidth=wide)
+        captured = capsys.readouterr()
+        assert f"{source_str:<{wide}} ---" in captured.out
+
+    def test_display_record_srcwidth_no_truncate(self, mgr: Manager, capsys) -> None:
+        """display_record with srcwidth narrower than source does not truncate."""
+        vd: VerseData = mgr["41004003"]
+        alrec = vd.records[0]
+        source_str = ", ".join(vd.sourceitems[sel].tokenstr for sel in alrec.source_selectors)
+        vd.display_record(alrec, srcwidth=1)
+        captured = capsys.readouterr()
+        assert source_str in captured.out
+
+    def test_display_records_produces_one_line_per_record(self, mgr: Manager, capsys) -> None:
+        """display_records prints exactly one line per alignment record."""
+        vd: VerseData = mgr["41004003"]
+        vd.display_records()
+        captured = capsys.readouterr()
+        lines = captured.out.splitlines()
+        assert len(lines) == len(vd.records)
+
+    def test_display_records_consistent_source_width(self, mgr: Manager, capsys) -> None:
+        """display_records aligns ' --- ' at the same column across all records."""
+        vd: VerseData = mgr["41004003"]
+        vd.display_records()
+        captured = capsys.readouterr()
+        lines = captured.out.splitlines()
+        separator_positions = [line.index(" --- ") for line in lines if " --- " in line]
+        assert len(set(separator_positions)) == 1
+
+    def test_display_records_empty_verse(self, mgr: Manager, capsys) -> None:
+        """display_records on a verse with no records produces no output."""
+        # Find a verse with no alignment records, or mock one
+        from biblealignlib.burrito import VerseData as VD
+        import dataclasses
+        vd: VerseData = mgr["41004003"]
+        empty_vd = dataclasses.replace(vd, records=())
+        empty_vd.display_records()
+        captured = capsys.readouterr()
+        assert captured.out == ""
+
     def test_diff_record_repr(self) -> None:
         """Test DiffRecord __repr__ includes bcvid and reason."""
         rec = DiffRecord(bcvid="41004004", diffreason=DiffReason.DIFFLEN)
