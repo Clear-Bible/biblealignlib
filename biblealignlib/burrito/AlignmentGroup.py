@@ -246,14 +246,6 @@ class AlignmentRecord:
         """Return the target selectors for this record."""
         return self.get_selectors("target")
 
-    def update_target_selectors(self, selectors: list[str]) -> None:
-        """Replace the target selectors for this record.
-
-        Selectors are sorted, matching the behaviour of
-        AlignmentReference.__post_init__.
-        """
-        self.references["target"].selectors = sorted(selectors)
-
     @property
     def selectors(self) -> tuple[list[str], list[str]]:
         """Return a tuple of source and target selectors for this record."""
@@ -290,6 +282,14 @@ class AlignmentRecord:
     def incomplete(self) -> bool:
         """True if any selectors in references are incomplete."""
         return any(ref.incomplete for ref in self.references.values())
+
+    def update_target_selectors(self, selectors: list[str]) -> None:
+        """Replace the target selectors for this record.
+
+        Selectors are sorted, matching the behaviour of
+        AlignmentReference.__post_init__.
+        """
+        self.references["target"].selectors = sorted(selectors)
 
     def asdict(
         self, positional: bool = False, withmeta: bool = True, withmaculaprefix: bool = False
