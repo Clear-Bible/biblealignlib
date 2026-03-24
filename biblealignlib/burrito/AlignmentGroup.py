@@ -27,7 +27,7 @@ from biblelib.word import bcvwpid
 import biblealignlib as bal
 
 from .AlignmentType import TranslationType
-from .source import macula_prefixer
+from .source import macula_prefixer, macula_unprefixer
 
 
 # hoisting means this can be defined at several different levels, so
@@ -292,7 +292,12 @@ class AlignmentRecord:
         self.references["target"].selectors = sorted(selectors)
 
     def asdict(
-        self, positional: bool = False, withmeta: bool = True, withmaculaprefix: bool = False
+        self,
+        positional: bool = False,
+        withmeta: bool = True,
+        withmaculaprefix: bool = False,
+        source_tokens: Optional[dict[str, Any]] = None,
+        target_tokens: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Return a dict of values suitable for serialization.
 
@@ -307,6 +312,14 @@ class AlignmentRecord:
         With withmaculaprefix=True (the default is False), prefix
         source references with 'o' or 'n' depending on canon.
 
+        With source_tokens provided as a dict mapping bare token IDs to token
+        objects, source selectors are replaced with tokenstr representations
+        ("{id}|{text}"). With withmaculaprefix=True, the prefixed ID is used.
+
+        With target_tokens provided as a dict mapping token IDs to token
+        objects, target selectors are replaced with tokenstr representations
+        ("{id}|{text}").
+
         """
         recdict: dict[str, Any] = {}
         if positional:
@@ -319,12 +332,28 @@ class AlignmentRecord:
         else:
             # typical case
             sourcerefs: list[str] = self.references["source"].selectors
-            if withmaculaprefix:
+            if source_tokens is not None:
+                # Build tokenstr: use bare ID by default, prefixed ID if withmaculaprefix
+                bare_ids = [macula_unprefixer(sel) for sel in sourcerefs]
+                display_ids = (
+                    [macula_prefixer(b) for b in bare_ids] if withmaculaprefix else bare_ids
+                )
+                sourcerefs = [
+                    f"{did}|{source_tokens[bare].text}" if bare in source_tokens else did
+                    for bare, did in zip(bare_ids, display_ids)
+                ]
+            elif withmaculaprefix:
                 # default: add back the Macula prefix
                 sourcerefs = [macula_prefixer(srcstr) for srcstr in sourcerefs]
             # else leave as is (atypical)
             recdict["source"] = sourcerefs
-            recdict["target"] = self.references["target"].selectors
+            targetrefs: list[str] = self.references["target"].selectors
+            if target_tokens is not None:
+                targetrefs = [
+                    f"{sel}|{target_tokens[sel].text}" if sel in target_tokens else sel
+                    for sel in targetrefs
+                ]
+            recdict["target"] = targetrefs
         if withmeta:
             recdict.update(
                 {
@@ -380,11 +409,24 @@ class AlignmentGroup:
         docids: tuple[str, str] = tuple([doc.asdict()["docid"] for doc in self.documents])
         return f"<AlignmentGroup{docids}: {len(self.records)} records>"
 
-    def asdict(self, hoist: bool = True) -> dict[str, Any]:
+    def asdict(
+        self,
+        hoist: bool = True,
+        source_tokens: Optional[dict[str, Any]] = None,
+        target_tokens: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """Return a dict of values suitable for serialization.
 
         This is opinionated about the preferred serialization: hoists
         as much as possible to upper levels.
+
+        With source_tokens provided as a dict mapping bare token IDs to token
+        objects, source selectors in each record are replaced with tokenstr
+        representations ("{id}|{text}").
+
+        With target_tokens provided as a dict mapping token IDs to token
+        objects, target selectors in each record are replaced with tokenstr
+        representations ("{id}|{text}").
 
         """
         # for now
@@ -395,7 +437,13 @@ class AlignmentGroup:
             "meta": self.meta.asdict(),
             "type": self._type,
             "records": [
-                rec.asdict(positional=positional, withmeta=withmeta) for rec in self.records
+                rec.asdict(
+                    positional=positional,
+                    withmeta=withmeta,
+                    source_tokens=source_tokens,
+                    target_tokens=target_tokens,
+                )
+                for rec in self.records
             ],
         }
 
@@ -446,10 +494,27 @@ class TopLevelGroups:
         """Return a printed representation."""
         return f"<TopLevelGroups({self.targetdocid}): {self.sourcedocids}>"
 
-    def asdict(self, hoist: bool = True) -> dict[str, Any]:
-        """Return an opionated dict of values suitable for serialization."""
+    def asdict(
+        self,
+        hoist: bool = True,
+        source_tokens: Optional[dict[str, Any]] = None,
+        target_tokens: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        """Return an opionated dict of values suitable for serialization.
+
+        With source_tokens and target_tokens, passes them to each group's
+        asdict() so that selectors are replaced with tokenstr representations.
+
+        """
         return {
             "format": self.format,
             "version": self.version,
-            "groups": [self.groups[0].asdict(hoist=hoist), self.groups[1].asdict(hoist=hoist)],
+            "groups": [
+                self.groups[0].asdict(
+                    hoist=hoist, source_tokens=source_tokens, target_tokens=target_tokens
+                ),
+                self.groups[1].asdict(
+                    hoist=hoist, source_tokens=source_tokens, target_tokens=target_tokens
+                ),
+            ],
         }
