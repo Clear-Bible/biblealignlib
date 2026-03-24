@@ -303,7 +303,7 @@ class DiffTargets84(UserDict):
         "64001014033": "64001015018",
     }
     # hacky way to avoid outputing the same alignment record more than once
-    output_alrecs: dict[str, AlignmentRecord] = {}
+    output_alrecs: dict[str, bool] = {}
 
     def __init__(
         self,
@@ -314,10 +314,10 @@ class DiffTargets84(UserDict):
         super().__init__()
         self.mgr84 = mgr84
         self.niv84bcvtargets: dict[str, list[Target]] = mgr84.bcv["targets"]
-        self.targets11: dict[str, Target] = targets11
+        self.targets11: TargetReader = targets11
         self.bcvequivalents = bcvequivalents
         # not correct for versification differences??
-        self.niv11bcvtargets: dict[str, list[Target]] = groupby_bcv(self.targets11.values())
+        self.niv11bcvtargets: dict[str, list[Target]] = groupby_bcv(list(self.targets11.values()))
         for bcv in self.niv11bcvtargets:
             if bcv not in self.missing84:
                 trg84: list[Target] = self.niv84bcvtargets.get(bcv, [])
@@ -326,8 +326,9 @@ class DiffTargets84(UserDict):
                     self.bcvequivalents.get(bcv, {}) if self.bcvequivalents else {}
                 )
                 record = diff_verse_targets(bcv, trg84, trg11, equivalents)
-                # record.data is like (('equal', 0, 5, 0, 5), ('replace', 5, 6, 5, 6), ('equal', 6, 34, 6, 34), ('replace', 34, 35, 34, 35), ('equal', 35, 38, 35, 38))
-                #                if record is not None:
+                # record.data is like
+                # (('equal', 0, 5, 0, 5), ('replace', 5, 6, 5, 6), ('equal', 6, 34, 6, 34),
+                # ('replace', 34, 35, 34, 35), ('equal', 35, 38, 35, 38))
                 if record and not self._replaceonly_same_length(record):
                     # then record as a difference
                     self.data[bcv] = record
@@ -383,25 +384,12 @@ class DiffTargets84(UserDict):
 
     # only for single-token replace operations
     def replace_single_text(self, bcv: str) -> dict[str, str]:
-        record = self.data.get(bcv)
         text84, text11 = self._get_bcv_texts(bcv)
         replacements: dict[str, str] = {}
-        for op in record.data:
+        for op in self.data.get(bcv, []):
             if op.single_replace:
                 k = text11[op.start2 : op.end2][0]
                 replacements[k] = text84[op.start1 : op.end1][0]
-        return replacements
-
-    # replacements where one or both sides have two tokens
-    # could consolidate this with replace_single_text
-    def replace_dual_text(self, bcv: str) -> dict[str, str]:
-        record = self.data.get(bcv)
-        text84, text11 = self._get_bcv_texts(bcv)
-        replacements: dict[str, str] = {}
-        for op in record.data:
-            if op.dual_replace:
-                k = tuple(text11[op.start2 : op.end2])
-                replacements[k] = tuple(text84[op.start1 : op.end1])
         return replacements
 
     def mismatched_verses(self) -> dict[str, AlignmentRecord]:
@@ -498,8 +486,7 @@ class DiffTargets84(UserDict):
                 self.output_alrecs[alrec.meta.id] = True
             except KeyError as e:
                 # Selectors: ['42001025012']
-                # niv11map keys: dict_keys(['42001024001', '42001024002', '42001024003', '42001024004', '42001024005', '42001024006', '42001024007', '42001024008', '42001024009', '42001024010', '42001024011', '42001024012', '42001024013', '42001024014', '42001024015'])
-
+                # niv11map keys: dict_keys(['42001024001', '42001024002', '42001024003', ...])
                 print(f"--- {versedata.bcvid}, KeyError on {e}")
                 print(f"Record: {alrec}")
 
@@ -599,12 +586,17 @@ class DiffTargets84(UserDict):
 class Serialize:
     """Serialize confident alignments for ClearAligner.
 
+    With include_partials True, this also includes partial alignments.
+
     Also outputs difference records and difference information on
     tokens as a checklist of things to review.
 
     """
 
-    def __init__(self, dt84: DiffTargets84) -> None:
+    # collects alignment records that didn't produce partials: BCVID -> list of records
+    unmapped_records: dict[str, list[AlignmentRecord]] = {}
+
+    def __init__(self, dt84: DiffTargets84, include_partials: bool = False) -> None:
         self.dt84 = dt84
         self.mgr84 = dt84.mgr84
         self.niv84bcvtargets = dt84.niv84bcvtargets
@@ -620,8 +612,10 @@ class Serialize:
         )
         # read the existing alignments but then replace the alignment records
         self.mgr11: Manager = Manager(self.niv11alset)
-        self.mgr11.targetitems: TargetReader = self.dt84.targets11
-        self.niv11_algroup: AlignmentGroup = self.niv11_alignment_group()
+        self.mgr11.targetitems = self.dt84.targets11
+        self.niv11_algroup: AlignmentGroup = self.niv11_alignment_group(
+            include_partials=include_partials
+        )
         self.mgr11.bcv["records"] = groupby_bcv(
             list(self.niv11_algroup.records), lambda r: r.source_bcv
         )
@@ -713,7 +707,79 @@ class Serialize:
 
         return new_alrecs
 
-    def niv11_alignment_group(self) -> AlignmentGroup:
+    # from Claude
+    def collect_partial_records(self, bcv: str) -> list[AlignmentRecord]:
+        """Generate NIV11 AlignmentRecords for confidently-mapped records in a diff verse.
+
+        For each operation in the verse's DiffRecord whose opcode is 'equal' or
+        'replace' with equal length (same token count on both sides), the positional
+        zip gives a one-to-one NIV84 → NIV11 token correspondence.
+
+        An AlignmentRecord is included only when every one of its target selectors
+        falls within the span of such a confident operation, so the full NIV11
+        mapping is unambiguous.  Records that straddle operation boundaries, or
+        whose selectors sit in a delete/insert/unequal-replace span, are skipped.
+
+        Returns an empty list for verses without a DiffRecord (those are handled
+        by the existing _alrecs_to_niv11 / niv11_alignment_group path).
+        """
+        diffrec = self.dt84.data.get(bcv)
+        if diffrec is None:
+            return []
+        versedata = self.mgr84.bcv["versedata"].get(bcv)
+        if versedata is None or not versedata.records:
+            return []
+
+        niv84_tokens = self.niv84bcvtargets.get(bcv, [])
+        niv11_tokens = self.niv11bcvtargets.get(bcv, [])
+
+        # Build a confident NIV84 token ID → NIV11 token ID map.
+        # equal ops: texts match; same-length replace ops: unique positional partner.
+        confident_map: dict[str, str] = {}
+        for op in diffrec.data:
+            if op.opcode == "equal" or (op.opcode == "replace" and op.same_length):
+                for t84, t11 in zip(
+                    niv84_tokens[op.start1 : op.end1],
+                    niv11_tokens[op.start2 : op.end2],
+                ):
+                    confident_map[t84.id] = t11.id
+
+        if not confident_map:
+            return []
+
+        new_alrecs: list[AlignmentRecord] = []
+        for alrec in versedata.records:
+            niv11_selectors: list[str] = []
+            for sel in alrec.target_selectors:
+                niv11_id = confident_map.get(sel)
+                if niv11_id is None:
+                    if bcv not in self.unmapped_records:
+                        self.unmapped_records[bcv] = [alrec]
+                    else:
+                        if alrec not in self.unmapped_records[bcv]:
+                            self.unmapped_records[bcv].append(alrec)
+                    break  # selector not in any confident span → skip record
+                niv11_selectors.append(niv11_id)
+            else:
+                # all selectors mapped confidently
+                newmeta = copy.deepcopy(alrec.meta)
+                newmeta.origin = "NIV84_partial_transfer"
+                new_alrecs.append(
+                    AlignmentRecord(
+                        meta=newmeta,
+                        references={
+                            "source": alrec.references["source"],
+                            "target": AlignmentReference(
+                                document=self.niv11_document, selectors=niv11_selectors
+                            ),
+                        },
+                        type=alrec.type,
+                    )
+                )
+
+        return new_alrecs
+
+    def niv11_alignment_group(self, include_partials: bool = False) -> AlignmentGroup:
         """Return an AlignmentGroup for NIV11, with aligned records from NIV84 where possible."""
         niv84_algroup: AlignmentGroup = self.mgr84.alignmentsreader.alignmentgroup
         sblgnt_document: Document = niv84_algroup.documents[0]
@@ -725,6 +791,13 @@ class Serialize:
             if bcv not in self.dt84
             for alrec in self._alrecs_to_niv11(bcv)
         ]
+        if include_partials:
+            niv11_partials: list[AlignmentRecord] = [
+                alrec
+                for bcv in self.dt84.data.keys()
+                for alrec in self.collect_partial_records(bcv)
+            ]
+            niv11_alrecs = sorted(niv11_alrecs + niv11_partials)
         niv11_algroup: AlignmentGroup = AlignmentGroup(
             documents=(sblgnt_document, self.niv11_document),
             meta=niv11_metadata,
@@ -735,6 +808,29 @@ class Serialize:
             _type=niv84_algroup._type,
         )
         return niv11_algroup
+
+    def write_unmapped_records(self, outpath: Path = None) -> None:
+        """Write partials that were not included in partials (confidently-mapped spans)."""
+        unmapped_output: set[AlignmentRecord] = set()
+        if not outpath:
+            outdir = self.mgr84.alignmentset.langdatapath / "NIV84-NIV11"
+            outdir.mkdir(parents=True, exist_ok=True)
+            outpath = outdir / "NIV84-NIV11-unmappedrecords.tsv"
+        with outpath.open("w", encoding="utf-8") as f:
+            f.write("Verse\tNIV84 Tokens\n")
+            for bcv, alreclist in self.unmapped_records.items():
+                niv84_bcv_tokens: list[Target] = self.niv84bcvtargets.get(bcv, [])
+                niv84_bcv_tokenstrs: dict[str, str] = {t.id: t.tokenstr for t in niv84_bcv_tokens}
+                for alrec in alreclist:
+                    if alrec in unmapped_output:
+                        continue
+                    else:
+                        unmapped_output.add(alrec)
+                        niv84_str = {
+                            sel: niv84_bcv_tokenstrs.get(sel, "<unknown>")
+                            for sel in alrec.target_selectors
+                        }
+                        f.write(f"{bcv}\t{" ".join(niv84_str.values())}\n")
 
     def write_diffs(self, outpath: Path = None) -> None:
         """Write diffs as a checklist for manual alignment."""
