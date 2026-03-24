@@ -35,7 +35,7 @@ from collections import UserDict
 from typing import TypedDict
 from warnings import warn
 
-from .AlignmentGroup import AlignmentRecord
+from .AlignmentGroup import AlignmentGroup, AlignmentRecord
 from .AlignmentSet import AlignmentSet
 from .VerseData import VerseData
 from .alignments import AlignmentsReader
@@ -114,6 +114,7 @@ class Manager(UserDict):
             keepbadrecords=self.keepbadrecords,
         )
         self.alignmentsreader.clean_alignments(self.sourceitems, self.targetitems)
+        self.alignmentgroup: AlignmentGroup = self.alignmentsreader.alignmentgroup
         # TODO: upgrade the selectors to use tokenstr. This requires
         # knowing the source and targetitems, but alignmentsreader
         # doesn't have that data
