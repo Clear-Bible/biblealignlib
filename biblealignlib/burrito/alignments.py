@@ -297,11 +297,24 @@ class AlignmentsReader:
 
 
 # copied from gc2sb.manager.write_alignment_group with minor changes
-def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) -> None:
+def write_alignment_group(
+    group: AlignmentGroup,
+    f: TextIO,
+    hoist: bool = True,
+    source_tokens: Optional[dict[str, Any]] = None,
+    target_tokens: Optional[dict[str, Any]] = None,
+) -> None:
     """Write JSON data for an arbitrary group in Scripture Burrito format.
 
     Writes some of the JSON by hand to get records on the same line.
     Record meta.id values are assigned sequentially per BCV, e.g. "40001001.1".
+
+    With source_tokens provided as a dict mapping bare token IDs to token
+    objects, source selectors are written as tokenstr representations
+    ("{id}|{text}") instead of plain IDs.
+
+    With target_tokens provided as a dict mapping token IDs to token objects,
+    target selectors are written as tokenstr representations ("{id}|{text}").
     """
 
     def _write_documents(out: TextIO, documents: tuple[Document, Document]) -> None:
@@ -324,7 +337,7 @@ def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) 
         """
         bcv = arec.source_bcv
         bcv_counters[bcv] = bcv_counters.get(bcv, 0) + 1
-        recdict = arec.asdict()
+        recdict = arec.asdict(source_tokens=source_tokens, target_tokens=target_tokens)
         recdict["meta"]["id"] = f"{bcv}.{bcv_counters[bcv]:02}"
         return recdict
 

@@ -1,9 +1,8 @@
-"""Test code in burrito.AlignmentRecord
-
-Does not test writing files.
-"""
+"""Test code in burrito.AlignmentRecord"""
 
 import copy
+import io
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -15,6 +14,7 @@ from biblealignlib.burrito import (
     AlignmentRecord,
     AlignmentGroup,
     TopLevelGroups,
+    write_alignment_group,
 )
 
 
@@ -376,6 +376,71 @@ class TestAlignmentGroup:
         rec = recdict["records"][0]
         assert rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
         assert rec["target"] == ["410040030021|Listen"]
+
+
+class TestWriteAlignmentGroup:
+    """Test write_alignment_group() tokenstr output."""
+
+    def test_write_default(self, group: AlignmentGroup) -> None:
+        """write_alignment_group without token dicts writes plain IDs."""
+        buf = io.StringIO()
+        write_alignment_group(group, buf)
+        result = json.loads(buf.getvalue())
+        rec = result["records"][0]
+        # plain IDs, no '|' separator
+        assert all("|" not in sel for sel in rec["source"])
+        assert all("|" not in sel for sel in rec["target"])
+
+    def test_write_with_source_tokens(self, group: AlignmentGroup) -> None:
+        """write_alignment_group with source_tokens writes tokenstr for source."""
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        buf = io.StringIO()
+        write_alignment_group(group, buf, source_tokens=source_tokens)
+        result = json.loads(buf.getvalue())
+        rec = result["records"][0]
+        assert rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+        assert all("|" not in sel for sel in rec["target"])
+
+    def test_write_with_target_tokens(self, group: AlignmentGroup) -> None:
+        """write_alignment_group with target_tokens writes tokenstr for target."""
+        target_tokens = {
+            "410040030021": SimpleNamespace(text="Listen"),
+        }
+        buf = io.StringIO()
+        write_alignment_group(group, buf, target_tokens=target_tokens)
+        result = json.loads(buf.getvalue())
+        rec = result["records"][0]
+        assert rec["target"] == ["410040030021|Listen"]
+        assert all("|" not in sel for sel in rec["source"])
+
+    def test_write_with_both_token_dicts(self, group: AlignmentGroup) -> None:
+        """write_alignment_group with both token dicts writes tokenstr for source and target."""
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        target_tokens = {
+            "410040030021": SimpleNamespace(text="Listen"),
+        }
+        buf = io.StringIO()
+        write_alignment_group(group, buf, source_tokens=source_tokens, target_tokens=target_tokens)
+        result = json.loads(buf.getvalue())
+        rec = result["records"][0]
+        assert rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+        assert rec["target"] == ["410040030021|Listen"]
+
+    def test_write_produces_valid_json(self, group: AlignmentGroup) -> None:
+        """write_alignment_group output is always valid JSON."""
+        source_tokens = {"41004003001": SimpleNamespace(text="Ἀκούετε")}
+        buf = io.StringIO()
+        write_alignment_group(group, buf, source_tokens=source_tokens)
+        # must not raise
+        result = json.loads(buf.getvalue())
+        assert "records" in result
+        assert "documents" in result
 
 
 # not needed for AlignmentHub
