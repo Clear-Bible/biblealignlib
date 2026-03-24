@@ -335,7 +335,8 @@ def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) 
     f.write(f' "type": "{group._type}",\n "records": [\n ')
     # should sort the records: NIV11 doesn't appear to be sorted
     bcv_counters: dict[str, int] = {}
-    for arec in group.records[:-1]:
+    records = sorted(group.records)
+    for arec in records[:-1]:
         json.dump(_record_dict(arec, bcv_counters), f)
         f.write(",\n ")
     # now the last one without a comma, because JSON
