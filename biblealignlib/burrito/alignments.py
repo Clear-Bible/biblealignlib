@@ -28,7 +28,7 @@ from .AlignmentGroup import Document, Metadata, AlignmentGroup, AlignmentReferen
 from .AlignmentSet import AlignmentSet
 from .AlignmentType import TranslationType
 from .BadRecord import BadRecord, Reason
-from .source import SourceReader, macula_unprefixer
+from .source import SourceReader, macula_unprefixer, strip_tokenstr
 from .target import TargetReader
 
 
@@ -112,8 +112,10 @@ class AlignmentsReader:
     def _targetid(self, targetid: str) -> str:
         """Return a normalized target ID.
 
+        Strips any tokenstr text suffix ("{id}|{text}" → "{id}") first.
         With self.keeptargetwordpart = False, drop the last digit.
         """
+        targetid = strip_tokenstr(targetid)
         if not self.keeptargetwordpart and len(targetid) == 12:
             return targetid[:11]
         else:
