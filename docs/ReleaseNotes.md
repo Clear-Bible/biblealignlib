@@ -15,7 +15,13 @@
   origin, status). Adds RecordDiff dataclass, computes records only in
   one set, and provides a human-readable show() summary; validates
   sourceid/targetid/targetlanguage before comparing.
+* Added `util.MergeAlignments` code for merging two sets of alignments
+  on the same text. This is unlikely to be of general interest.
 * Updated tests and documentation.
+* Minor tweaks
+    * `burrito.alignments.write_alignment_group()` now sorts records
+      before writing them out.
+    * made `alignmentgroup` a class-level variable in `Manager()`
   
 ## 0.3.1
 
