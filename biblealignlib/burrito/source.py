@@ -81,7 +81,7 @@ def strip_tokenstr(selector: str) -> str:
     A tokenstr selector has the form "{id}|{text}" (e.g. "n41004003001|Ἀκούετε").
     Plain IDs without a '|' are returned unchanged.
     """
-    return selector.split("|", 1)[0] if "|" in selector else selector
+    return selector.split("|", 1)[0]
 
 
 def macula_unprefixer(bcvwp: str) -> str:

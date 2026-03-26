@@ -110,10 +110,10 @@ class AlignmentsReader:
         #
 
     def _targetid(self, targetid: str) -> str:
-        """Return a normalized target ID.
+        """Return a normalized target ID, optionally dropping the word-part digit.
 
-        Strips any tokenstr text suffix ("{id}|{text}" → "{id}") first.
-        With self.keeptargetwordpart = False, drop the last digit.
+        Accepts both plain IDs and tokenstr selectors ("{id}|{text}").
+        With self.keeptargetwordpart = False, a 12-character ID is truncated to 11.
         """
         targetid = strip_tokenstr(targetid)
         if not self.keeptargetwordpart and len(targetid) == 12:
@@ -302,7 +302,6 @@ class AlignmentsReader:
 def write_alignment_group(
     group: AlignmentGroup,
     f: TextIO,
-    hoist: bool = True,
     source_tokens: Optional[dict[str, Any]] = None,
     target_tokens: Optional[dict[str, Any]] = None,
 ) -> None:
