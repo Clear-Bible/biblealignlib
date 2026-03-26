@@ -77,8 +77,7 @@ class Merger:
             data2: Optional[VerseData] = cast(
                 Optional[VerseData], self.mgr2.bcv["versedata"].get(bcv)
             )
-            if data1 and data2:
-                diffs: list[DiffRecord] = data1.diff(data2)
+            diffs: list[DiffRecord] = data1.diff(data2) if data1 and data2 else []
             bcv_pairs[bcv] = BCVPair(
                 bcv=bcv,
                 mgr1_data=data1,
