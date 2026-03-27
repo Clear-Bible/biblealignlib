@@ -28,7 +28,7 @@ from .AlignmentGroup import Document, Metadata, AlignmentGroup, AlignmentReferen
 from .AlignmentSet import AlignmentSet
 from .AlignmentType import TranslationType
 from .BadRecord import BadRecord, Reason
-from .source import SourceReader, macula_unprefixer
+from .source import SourceReader, macula_unprefixer, strip_tokenstr
 from .target import TargetReader
 
 
@@ -110,10 +110,12 @@ class AlignmentsReader:
         #
 
     def _targetid(self, targetid: str) -> str:
-        """Return a normalized target ID.
+        """Return a normalized target ID, optionally dropping the word-part digit.
 
-        With self.keeptargetwordpart = False, drop the last digit.
+        Accepts both plain IDs and tokenstr selectors ("{id}|{text}").
+        With self.keeptargetwordpart = False, a 12-character ID is truncated to 11.
         """
+        targetid = strip_tokenstr(targetid)
         if not self.keeptargetwordpart and len(targetid) == 12:
             return targetid[:11]
         else:
@@ -297,23 +299,35 @@ class AlignmentsReader:
 
 
 # copied from gc2sb.manager.write_alignment_group with minor changes
-def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) -> None:
+def write_alignment_group(
+    group: AlignmentGroup,
+    f: TextIO,
+    source_tokens: Optional[dict[str, Any]] = None,
+    target_tokens: Optional[dict[str, Any]] = None,
+) -> None:
     """Write JSON data for an arbitrary group in Scripture Burrito format.
 
     Writes some of the JSON by hand to get records on the same line.
     Record meta.id values are assigned sequentially per BCV, e.g. "40001001.1".
+
+    With source_tokens provided as a dict mapping bare token IDs to token
+    objects, source selectors are written as tokenstr representations
+    ("{id}|{text}") instead of plain IDs.
+
+    With target_tokens provided as a dict mapping token IDs to token objects,
+    target selectors are written as tokenstr representations ("{id}|{text}").
     """
 
     def _write_documents(out: TextIO, documents: tuple[Document, Document]) -> None:
         """Write documents tuple to out."""
         out.write(' "documents": [\n')
-        out.write("    " + json.dumps(documents[0].asdict()) + ",\n")
-        out.write("    " + json.dumps(documents[1].asdict()) + "\n")
+        out.write("    " + json.dumps(documents[0].asdict(), ensure_ascii=False) + ",\n")
+        out.write("    " + json.dumps(documents[1].asdict(), ensure_ascii=False) + "\n")
         out.write(" ],\n")
 
     def _write_meta(out: TextIO, meta: Metadata) -> None:
         """Write metadata to out."""
-        metarow = '"meta": ' + json.dumps(meta.asdict())
+        metarow = '"meta": ' + json.dumps(meta.asdict(), ensure_ascii=False)
         f.write(f" {metarow},\n")
 
     def _record_dict(arec: AlignmentRecord, bcv_counters: dict[str, int]) -> dict[str, Any]:
@@ -324,21 +338,21 @@ def write_alignment_group(group: AlignmentGroup, f: TextIO, hoist: bool = True) 
         """
         bcv = arec.source_bcv
         bcv_counters[bcv] = bcv_counters.get(bcv, 0) + 1
-        recdict = arec.asdict()
+        recdict = arec.asdict(source_tokens=source_tokens, target_tokens=target_tokens)
         recdict["meta"]["id"] = f"{bcv}.{bcv_counters[bcv]:02}"
         return recdict
 
     f.write("{\n")
     _write_documents(f, group.documents)
     _write_meta(f, group.meta)
-    f.write(f' "roles": {json.dumps(group.roles)},\n')
+    f.write(f' "roles": {json.dumps(group.roles, ensure_ascii=False)},\n')
     f.write(f' "type": "{group._type}",\n "records": [\n ')
     # should sort the records: NIV11 doesn't appear to be sorted
     bcv_counters: dict[str, int] = {}
     records = sorted(group.records)
     for arec in records[:-1]:
-        json.dump(_record_dict(arec, bcv_counters), f)
+        json.dump(_record_dict(arec, bcv_counters), f, ensure_ascii=False)
         f.write(",\n ")
     # now the last one without a comma, because JSON
-    json.dump(_record_dict(group.records[-1], bcv_counters), f)
+    json.dump(_record_dict(group.records[-1], bcv_counters), f, ensure_ascii=False)
     f.write("\n ]}")

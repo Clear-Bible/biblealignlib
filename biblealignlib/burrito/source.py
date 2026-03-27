@@ -75,8 +75,23 @@ def macula_prefixer(bcvwp: str) -> str:
         raise ValueError(f"Unable to add macula prefix to {bcvwp}")
 
 
+def strip_tokenstr(selector: str) -> str:
+    """Return only the ID portion of a selector, dropping any tokenstr text suffix.
+
+    A tokenstr selector has the form "{id}|{text}" (e.g. "n41004003001|Ἀκούετε").
+    Plain IDs without a '|' are returned unchanged.
+    """
+    return selector.split("|", 1)[0]
+
+
 def macula_unprefixer(bcvwp: str) -> str:
-    """Drop a corpus prefix ('n' or 'o') from BCVWP, else return unchanged."""
+    """Drop a corpus prefix ('n' or 'o') from BCVWP, else return unchanged.
+
+    Also strips any tokenstr text suffix ("{id}|{text}" → "{id}") before
+    checking for the prefix, so both plain IDs and tokenstr selectors are
+    handled correctly.
+    """
+    bcvwp = strip_tokenstr(bcvwp)
     if PREFIXRE.match(bcvwp):
         return bcvwp[1:]
     else:

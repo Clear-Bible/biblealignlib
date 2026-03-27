@@ -1,9 +1,9 @@
-"""Test code in burrito.AlignmentRecord
-
-Does not test writing files.
-"""
+"""Test code in burrito.AlignmentRecord"""
 
 import copy
+import io
+import json
+from types import SimpleNamespace
 
 import pytest
 
@@ -14,6 +14,7 @@ from biblealignlib.burrito import (
     AlignmentRecord,
     AlignmentGroup,
     TopLevelGroups,
+    write_alignment_group,
 )
 
 
@@ -294,6 +295,55 @@ class TestAlignmentRecord:
             assert role in recdict
         assert "meta" in recdict
 
+    def test_asdict_with_source_tokens(self, record: AlignmentRecord) -> None:
+        """source_tokens replaces source selectors with tokenstr representations."""
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        recdict = record.asdict(source_tokens=source_tokens)
+        assert recdict["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+        # target selectors unchanged
+        assert recdict["target"] == ["410040030021"]
+
+    def test_asdict_with_source_tokens_withmaculaprefix(self, record: AlignmentRecord) -> None:
+        """source_tokens with withmaculaprefix uses the prefixed ID in tokenstr."""
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        recdict = record.asdict(source_tokens=source_tokens, withmaculaprefix=True)
+        assert recdict["source"] == ["n41004003001|Ἀκούετε", "n41004003002|ἰδοὺ"]
+
+    def test_asdict_with_target_tokens(self, record: AlignmentRecord) -> None:
+        """target_tokens replaces target selectors with tokenstr representations."""
+        target_tokens = {
+            "410040030021": SimpleNamespace(text="Listen"),
+        }
+        recdict = record.asdict(target_tokens=target_tokens)
+        assert recdict["target"] == ["410040030021|Listen"]
+        # source selectors unchanged
+        assert recdict["source"] == ["n41004003001", "n41004003002"]
+
+    def test_asdict_with_both_token_dicts(self, record: AlignmentRecord) -> None:
+        """Both source_tokens and target_tokens replace selectors with tokenstr."""
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        target_tokens = {
+            "410040030021": SimpleNamespace(text="Listen"),
+        }
+        recdict = record.asdict(source_tokens=source_tokens, target_tokens=target_tokens)
+        assert recdict["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+        assert recdict["target"] == ["410040030021|Listen"]
+
+    def test_asdict_missing_token_leaves_selector(self, record: AlignmentRecord) -> None:
+        """Selectors not found in token dicts are left as plain IDs (bare, no macula prefix)."""
+        recdict = record.asdict(source_tokens={}, target_tokens={})
+        assert recdict["source"] == ["41004003001", "41004003002"]
+        assert recdict["target"] == ["410040030021"]
+
 
 class TestAlignmentGroup:
     """Test AlignmentGroup()."""
@@ -312,6 +362,94 @@ class TestAlignmentGroup:
         assert len(recdict) == 3
         for k in ["meta", "type", "records"]:
             assert k in recdict
+
+    def test_asdict_with_token_dicts(self, group: AlignmentGroup) -> None:
+        """AlignmentGroup.asdict() passes token dicts through to records."""
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        target_tokens = {
+            "410040030021": SimpleNamespace(text="Listen"),
+        }
+        recdict = group.asdict(source_tokens=source_tokens, target_tokens=target_tokens)
+        rec = recdict["records"][0]
+        assert rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+        assert rec["target"] == ["410040030021|Listen"]
+
+
+class TestWriteAlignmentGroup:
+    """Test write_alignment_group() tokenstr output."""
+
+    def test_write_default(self, group: AlignmentGroup) -> None:
+        """write_alignment_group without token dicts writes plain IDs."""
+        buf = io.StringIO()
+        write_alignment_group(group, buf)
+        result = json.loads(buf.getvalue())
+        rec = result["records"][0]
+        # plain IDs, no '|' separator
+        assert all("|" not in sel for sel in rec["source"])
+        assert all("|" not in sel for sel in rec["target"])
+
+    def test_write_with_source_tokens(self, group: AlignmentGroup) -> None:
+        """write_alignment_group with source_tokens writes tokenstr for source."""
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        buf = io.StringIO()
+        write_alignment_group(group, buf, source_tokens=source_tokens)
+        result = json.loads(buf.getvalue())
+        rec = result["records"][0]
+        assert rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+        assert all("|" not in sel for sel in rec["target"])
+
+    def test_write_with_target_tokens(self, group: AlignmentGroup) -> None:
+        """write_alignment_group with target_tokens writes tokenstr for target."""
+        target_tokens = {
+            "410040030021": SimpleNamespace(text="Listen"),
+        }
+        buf = io.StringIO()
+        write_alignment_group(group, buf, target_tokens=target_tokens)
+        result = json.loads(buf.getvalue())
+        rec = result["records"][0]
+        assert rec["target"] == ["410040030021|Listen"]
+        assert all("|" not in sel for sel in rec["source"])
+
+    def test_write_with_both_token_dicts(self, group: AlignmentGroup) -> None:
+        """write_alignment_group with both token dicts writes tokenstr for source and target."""
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        target_tokens = {
+            "410040030021": SimpleNamespace(text="Listen"),
+        }
+        buf = io.StringIO()
+        write_alignment_group(group, buf, source_tokens=source_tokens, target_tokens=target_tokens)
+        result = json.loads(buf.getvalue())
+        rec = result["records"][0]
+        assert rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+        assert rec["target"] == ["410040030021|Listen"]
+
+    def test_write_produces_valid_json(self, group: AlignmentGroup) -> None:
+        """write_alignment_group output is always valid JSON."""
+        source_tokens = {"41004003001": SimpleNamespace(text="Ἀκούετε")}
+        buf = io.StringIO()
+        write_alignment_group(group, buf, source_tokens=source_tokens)
+        # must not raise
+        result = json.loads(buf.getvalue())
+        assert "records" in result
+        assert "documents" in result
+
+    def test_write_unicode_literal(self, group: AlignmentGroup) -> None:
+        """Non-ASCII characters are written as literal UTF-8, not \\uXXXX escapes."""
+        source_tokens = {"41004003001": SimpleNamespace(text="Ἀκούετε")}
+        buf = io.StringIO()
+        write_alignment_group(group, buf, source_tokens=source_tokens)
+        raw = buf.getvalue()
+        assert "Ἀκούετε" in raw
+        assert r"\u" not in raw
 
 
 # not needed for AlignmentHub
