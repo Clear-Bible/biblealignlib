@@ -321,13 +321,13 @@ def write_alignment_group(
     def _write_documents(out: TextIO, documents: tuple[Document, Document]) -> None:
         """Write documents tuple to out."""
         out.write(' "documents": [\n')
-        out.write("    " + json.dumps(documents[0].asdict()) + ",\n")
-        out.write("    " + json.dumps(documents[1].asdict()) + "\n")
+        out.write("    " + json.dumps(documents[0].asdict(), ensure_ascii=False) + ",\n")
+        out.write("    " + json.dumps(documents[1].asdict(), ensure_ascii=False) + "\n")
         out.write(" ],\n")
 
     def _write_meta(out: TextIO, meta: Metadata) -> None:
         """Write metadata to out."""
-        metarow = '"meta": ' + json.dumps(meta.asdict())
+        metarow = '"meta": ' + json.dumps(meta.asdict(), ensure_ascii=False)
         f.write(f" {metarow},\n")
 
     def _record_dict(arec: AlignmentRecord, bcv_counters: dict[str, int]) -> dict[str, Any]:
@@ -345,14 +345,14 @@ def write_alignment_group(
     f.write("{\n")
     _write_documents(f, group.documents)
     _write_meta(f, group.meta)
-    f.write(f' "roles": {json.dumps(group.roles)},\n')
+    f.write(f' "roles": {json.dumps(group.roles, ensure_ascii=False)},\n')
     f.write(f' "type": "{group._type}",\n "records": [\n ')
     # should sort the records: NIV11 doesn't appear to be sorted
     bcv_counters: dict[str, int] = {}
     records = sorted(group.records)
     for arec in records[:-1]:
-        json.dump(_record_dict(arec, bcv_counters), f)
+        json.dump(_record_dict(arec, bcv_counters), f, ensure_ascii=False)
         f.write(",\n ")
     # now the last one without a comma, because JSON
-    json.dump(_record_dict(group.records[-1], bcv_counters), f)
+    json.dump(_record_dict(group.records[-1], bcv_counters), f, ensure_ascii=False)
     f.write("\n ]}")
