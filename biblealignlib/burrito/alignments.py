@@ -28,7 +28,8 @@ from .AlignmentGroup import Document, Metadata, AlignmentGroup, AlignmentReferen
 from .AlignmentSet import AlignmentSet
 from .AlignmentType import TranslationType
 from .BadRecord import BadRecord, Reason
-from .source import SourceReader, macula_unprefixer, strip_tokenstr
+from .BaseToken import strip_tokenstr
+from .source import SourceReader, macula_unprefixer
 from .target import TargetReader
 
 
@@ -352,8 +353,8 @@ def write_alignment_group(
     bcv_counters: dict[str, int] = {}
     records = sorted(group.records)
     for arec in records[:-1]:
-        json.dump(_record_dict(arec, bcv_counters), f)
+        json.dump(_record_dict(arec, bcv_counters), f, ensure_ascii=False)
         f.write(",\n ")
     # now the last one without a comma, because JSON
-    json.dump(_record_dict(group.records[-1], bcv_counters), f)
+    json.dump(_record_dict(group.records[-1], bcv_counters), f, ensure_ascii=False)
     f.write("\n ]}")
