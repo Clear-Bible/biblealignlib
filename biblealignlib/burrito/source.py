@@ -53,7 +53,7 @@ from biblealignlib import normalize_strongs, get_canonid
 
 # should eventually come from Clearlib
 from .util import groupby_key
-from .BaseToken import BaseToken
+from .BaseToken import BaseToken, strip_tokenstr
 
 PREFIXRE = re.compile(r"^[no]")
 
@@ -76,7 +76,13 @@ def macula_prefixer(bcvwp: str) -> str:
 
 
 def macula_unprefixer(bcvwp: str) -> str:
-    """Drop a corpus prefix ('n' or 'o') from BCVWP, else return unchanged."""
+    """Drop a corpus prefix ('n' or 'o') from BCVWP, else return unchanged.
+
+    Also strips any tokenstr text suffix ("{id}|{text}" → "{id}") before
+    checking for the prefix, so both plain IDs and tokenstr selectors are
+    handled correctly.
+    """
+    bcvwp = strip_tokenstr(bcvwp)
     if PREFIXRE.match(bcvwp):
         return bcvwp[1:]
     else:

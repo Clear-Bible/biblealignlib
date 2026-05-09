@@ -12,7 +12,7 @@ and some Unicode characters.
 import pytest
 
 from biblealignlib import SOURCES
-from biblealignlib.burrito import Source, SourceReader, macula_prefixer, macula_unprefixer
+from biblealignlib.burrito import Source, SourceReader, macula_prefixer, macula_unprefixer, strip_tokenstr
 
 
 class TestMacula_Prefixer:
@@ -36,6 +36,24 @@ class TestMacula_Prefixer:
             assert macula_prefixer("abc") == "abc"
 
 
+class TestStripTokenstr:
+    """Test strip_tokenstr()."""
+
+    def test_plain_id_unchanged(self) -> None:
+        """Plain IDs without '|' are returned unchanged."""
+        assert strip_tokenstr("41001001001") == "41001001001"
+        assert strip_tokenstr("n41001001001") == "n41001001001"
+
+    def test_strips_text_suffix(self) -> None:
+        """Tokenstr selectors have the text suffix removed."""
+        assert strip_tokenstr("n41004003001|Ἀκούετε") == "n41004003001"
+        assert strip_tokenstr("41004003001|Ἀκούετε") == "41004003001"
+
+    def test_only_first_pipe_split(self) -> None:
+        """Only the first '|' is treated as the separator."""
+        assert strip_tokenstr("41004003001|foo|bar") == "41004003001"
+
+
 class TestMacula_Unprefixer:
     """Test macula_unprefixer()."""
 
@@ -48,6 +66,14 @@ class TestMacula_Unprefixer:
         """Test NT unprefixing."""
         assert macula_unprefixer("n41001001001") == "41001001001"
         assert macula_unprefixer("41001001001") == "41001001001"
+
+    def test_tokenstr_with_prefix(self) -> None:
+        """Tokenstr selectors with a macula prefix are unprefixed correctly."""
+        assert macula_unprefixer("n41004003001|Ἀκούετε") == "41004003001"
+
+    def test_tokenstr_without_prefix(self) -> None:
+        """Tokenstr selectors without a macula prefix return the bare ID."""
+        assert macula_unprefixer("41004003001|Ἀκούετε") == "41004003001"
 
 
 @pytest.fixture(scope="module")
