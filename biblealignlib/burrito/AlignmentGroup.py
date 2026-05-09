@@ -341,7 +341,7 @@ class AlignmentRecord:
                     [macula_prefixer(b) for b in bare_ids] if withmaculaprefix else bare_ids
                 )
                 sourcerefs = [
-                    f"{did}|{source_tokens[bare].text}" if bare in source_tokens else did
+                    f"{did}|{tok.text}" if (tok := source_tokens.get(bare)) else did
                     for bare, did in zip(bare_ids, display_ids)
                 ]
             elif withmaculaprefix:
@@ -352,7 +352,7 @@ class AlignmentRecord:
             targetrefs: list[str] = self.references["target"].selectors
             if target_tokens is not None:
                 targetrefs = [
-                    f"{sel}|{target_tokens[sel].text}" if sel in target_tokens else sel
+                    f"{sel}|{tok.text}" if (tok := target_tokens.get(sel)) else sel
                     for sel in targetrefs
                 ]
             recdict["target"] = targetrefs
