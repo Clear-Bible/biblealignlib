@@ -442,6 +442,15 @@ class TestWriteAlignmentGroup:
         assert "records" in result
         assert "documents" in result
 
+    def test_write_unicode_literal(self, group: AlignmentGroup) -> None:
+        """Non-ASCII characters are written as literal UTF-8, not \\uXXXX escapes."""
+        source_tokens = {"41004003001": SimpleNamespace(text="Ἀκούετε")}
+        buf = io.StringIO()
+        write_alignment_group(group, buf, source_tokens=source_tokens)
+        raw = buf.getvalue()
+        assert "Ἀκούετε" in raw
+        assert r"\u" not in raw
+
 
 # not needed for AlignmentHub
 class TestTopLevelGroups:
