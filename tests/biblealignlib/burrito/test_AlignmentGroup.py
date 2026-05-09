@@ -460,3 +460,67 @@ class TestTopLevelGroups:
         assert len(recdict) == 3
         for k in ["format", "version", "groups"]:
             assert k in recdict
+
+    def test_asdict_source_tokens_formatted_in_nested_records(
+        self, groupwlcm: AlignmentGroup, group: AlignmentGroup
+    ) -> None:
+        """source_tokens are formatted as tokenstr in records nested inside both groups."""
+        tlg = TopLevelGroups(groups=(groupwlcm, group))
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        recdict = tlg.asdict(source_tokens=source_tokens)
+        # NT group (SBLGNT) record should have tokenstr selectors
+        nt_group = next(g for g in recdict["groups"] if any(
+            any("|" in s for s in rec["source"]) for rec in g["records"]
+        ))
+        nt_rec = nt_group["records"][0]
+        assert nt_rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+
+    def test_asdict_target_tokens_formatted_in_nested_records(
+        self, groupwlcm: AlignmentGroup, group: AlignmentGroup
+    ) -> None:
+        """target_tokens are formatted as tokenstr in records nested inside both groups."""
+        tlg = TopLevelGroups(groups=(groupwlcm, group))
+        target_tokens = {"410040030021": SimpleNamespace(text="Listen")}
+        recdict = tlg.asdict(target_tokens=target_tokens)
+        nt_group = next(g for g in recdict["groups"] if any(
+            any("|" in s for s in rec["target"]) for rec in g["records"]
+        ))
+        nt_rec = nt_group["records"][0]
+        assert nt_rec["target"] == ["410040030021|Listen"]
+
+    def test_asdict_both_token_dicts_nested(
+        self, groupwlcm: AlignmentGroup, group: AlignmentGroup
+    ) -> None:
+        """Both source and target token dicts reach the nested records."""
+        tlg = TopLevelGroups(groups=(groupwlcm, group))
+        source_tokens = {
+            "41004003001": SimpleNamespace(text="Ἀκούετε"),
+            "41004003002": SimpleNamespace(text="ἰδοὺ"),
+        }
+        target_tokens = {"410040030021": SimpleNamespace(text="Listen")}
+        recdict = tlg.asdict(source_tokens=source_tokens, target_tokens=target_tokens)
+        nt_group = next(g for g in recdict["groups"] if any(
+            any("|" in s for s in rec["source"]) for rec in g["records"]
+        ))
+        nt_rec = nt_group["records"][0]
+        assert nt_rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
+        assert nt_rec["target"] == ["410040030021|Listen"]
+
+    def test_asdict_missing_token_falls_back_to_plain_id(
+        self, groupwlcm: AlignmentGroup, group: AlignmentGroup
+    ) -> None:
+        """Selectors absent from the token dicts are emitted as plain IDs."""
+        tlg = TopLevelGroups(groups=(groupwlcm, group))
+        # Provide only one of the two source selectors; the other must stay plain.
+        source_tokens = {"41004003001": SimpleNamespace(text="Ἀκούετε")}
+        recdict = tlg.asdict(source_tokens=source_tokens)
+        nt_group = next(g for g in recdict["groups"] if any(
+            any("|" in s for s in rec["source"]) for rec in g["records"]
+        ))
+        nt_rec = nt_group["records"][0]
+        assert "41004003001|Ἀκούετε" in nt_rec["source"]
+        # second selector has no entry → plain bare ID (no '|')
+        assert any(s == "41004003002" for s in nt_rec["source"])
