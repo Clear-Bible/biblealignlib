@@ -1,5 +1,12 @@
 # Release Notes
 
+## 0.4
+
+* Added support for "tokenstr" representation like
+  "n41004003001|Ἀκούετε", since the BCVWP representation is less
+  clear. Able to read and write in this representation. 
+
+
 ## 0.3.2
 
 * Now using `burrito.BaseToken.tokenstr` as `__repr__` for BaseToken: updates to tests and
