@@ -291,6 +291,8 @@ class AlignmentRecord:
         """
         self.references["target"].selectors = sorted(selectors)
 
+    # note that source/target_tokens are only available from a Manager
+    # instance, so the default repr doesn't include tokenstrs.
     def asdict(
         self,
         positional: bool = False,
@@ -500,7 +502,7 @@ class TopLevelGroups:
         source_tokens: Optional[dict[str, Any]] = None,
         target_tokens: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
-        """Return an opionated dict of values suitable for serialization.
+        """Return an opinionated dict of values suitable for serialization.
 
         With source_tokens and target_tokens, passes them to each group's
         asdict() so that selectors are replaced with tokenstr representations.
