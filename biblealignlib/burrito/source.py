@@ -53,7 +53,7 @@ from biblealignlib import normalize_strongs, get_canonid
 
 # should eventually come from Clearlib
 from .util import groupby_key
-from .BaseToken import BaseToken
+from .BaseToken import BaseToken, strip_tokenstr
 
 PREFIXRE = re.compile(r"^[no]")
 
@@ -73,15 +73,6 @@ def macula_prefixer(bcvwp: str) -> str:
         return "n" + bcvwp
     else:
         raise ValueError(f"Unable to add macula prefix to {bcvwp}")
-
-
-def strip_tokenstr(selector: str) -> str:
-    """Return only the ID portion of a selector, dropping any tokenstr text suffix.
-
-    A tokenstr selector has the form "{id}|{text}" (e.g. "n41004003001|Ἀκούετε").
-    Plain IDs without a '|' are returned unchanged.
-    """
-    return selector.split("|", 1)[0] if "|" in selector else selector
 
 
 def macula_unprefixer(bcvwp: str) -> str:

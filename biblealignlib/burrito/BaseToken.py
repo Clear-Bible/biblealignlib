@@ -92,3 +92,12 @@ def bare_id(identifier: str) -> str:
         identifier
     ), f"'{identifier}' does not look like a valid BCVWPID identifier."
     return identifier[1:] if identifier[0].isalpha() else identifier
+
+
+def strip_tokenstr(selector: str) -> str:
+    """Return only the ID portion of a selector, dropping any tokenstr text suffix.
+
+    A tokenstr selector has the form "{id}|{text}" (e.g. "n41004003001|Ἀκούετε").
+    Plain IDs without a '|' are returned unchanged.
+    """
+    return selector.split("|", 1)[0] if "|" in selector else selector
