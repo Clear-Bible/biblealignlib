@@ -385,7 +385,7 @@ class TestWriteAlignmentGroup:
         """write_alignment_group without token dicts writes plain IDs."""
         buf = io.StringIO()
         write_alignment_group(group, buf)
-        result = json.loads(buf.getvalue())
+        result = json.loads(buf.getvalue())["groups"][0]
         rec = result["records"][0]
         # plain IDs, no '|' separator
         assert all("|" not in sel for sel in rec["source"])
@@ -399,7 +399,7 @@ class TestWriteAlignmentGroup:
         }
         buf = io.StringIO()
         write_alignment_group(group, buf, source_tokens=source_tokens)
-        result = json.loads(buf.getvalue())
+        result = json.loads(buf.getvalue())["groups"][0]
         rec = result["records"][0]
         assert rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
         assert all("|" not in sel for sel in rec["target"])
@@ -411,7 +411,7 @@ class TestWriteAlignmentGroup:
         }
         buf = io.StringIO()
         write_alignment_group(group, buf, target_tokens=target_tokens)
-        result = json.loads(buf.getvalue())
+        result = json.loads(buf.getvalue())["groups"][0]
         rec = result["records"][0]
         assert rec["target"] == ["410040030021|Listen"]
         assert all("|" not in sel for sel in rec["source"])
@@ -427,7 +427,7 @@ class TestWriteAlignmentGroup:
         }
         buf = io.StringIO()
         write_alignment_group(group, buf, source_tokens=source_tokens, target_tokens=target_tokens)
-        result = json.loads(buf.getvalue())
+        result = json.loads(buf.getvalue())["groups"][0]
         rec = result["records"][0]
         assert rec["source"] == ["41004003001|Ἀκούετε", "41004003002|ἰδοὺ"]
         assert rec["target"] == ["410040030021|Listen"]
@@ -438,9 +438,36 @@ class TestWriteAlignmentGroup:
         buf = io.StringIO()
         write_alignment_group(group, buf, source_tokens=source_tokens)
         # must not raise
-        result = json.loads(buf.getvalue())
+        result = json.loads(buf.getvalue())["groups"][0]
         assert "records" in result
         assert "documents" in result
+
+    def test_write_top_level_envelope(self, group: AlignmentGroup) -> None:
+        """Output carries the alignment format declaration and a groups array.
+
+        Version 0.4 removed the group-less top-level form that 0.3
+        allowed, so a single group is still wrapped in "groups".
+        """
+        buf = io.StringIO()
+        write_alignment_group(group, buf)
+        result = json.loads(buf.getvalue())
+        assert result["format"] == "alignment"
+        assert result["version"] == "0.4"
+        assert len(result["groups"]) == 1
+        # the group keeps its own content
+        assert set(result["groups"][0]) == {"documents", "meta", "roles", "type", "records"}
+
+    def test_write_omits_meta_conformsto(self, group: AlignmentGroup) -> None:
+        """conformsTo is not written: the top-level "version" declares the version.
+
+        The alignment format defines no meta.conformsTo, and carrying
+        the version twice lets the two copies drift apart.
+        """
+        buf = io.StringIO()
+        write_alignment_group(group, buf)
+        result = json.loads(buf.getvalue())
+        assert "conformsTo" not in result["groups"][0]["meta"]
+        assert result["version"] == "0.4"
 
     def test_write_unicode_literal(self, group: AlignmentGroup) -> None:
         """Non-ASCII characters are written as literal UTF-8, not \\uXXXX escapes."""
@@ -461,7 +488,7 @@ class TestTopLevelGroups:
         #         assert "source" in ref.roles
         tlg = TopLevelGroups(groups=(groupwlcm, group))
         assert tlg.format == "alignment"
-        assert tlg.version == "0.3.1"
+        assert tlg.version == "0.4"
         assert tlg.sourcedocids == ("WLCM", "SBLGNT")
         assert tlg.targetdocid == "BSB"
         assert repr(tlg) == "<TopLevelGroups(BSB): ('WLCM', 'SBLGNT')>"

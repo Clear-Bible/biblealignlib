@@ -24,13 +24,43 @@ import json
 from typing import Any, Optional, TextIO
 
 
-from .AlignmentGroup import Document, Metadata, AlignmentGroup, AlignmentReference, AlignmentRecord
+from .AlignmentGroup import (
+    ALIGNMENT_FORMAT,
+    ALIGNMENT_VERSION,
+    Document,
+    Metadata,
+    AlignmentGroup,
+    AlignmentReference,
+    AlignmentRecord,
+)
 from .AlignmentSet import AlignmentSet
 from .AlignmentType import TranslationType
 from .BadRecord import BadRecord, Reason
 from .BaseToken import strip_tokenstr
 from .source import SourceReader, macula_unprefixer
 from .target import TargetReader
+
+
+def unwrap_group(agroupdict: dict[str, Any]) -> dict[str, Any]:
+    """Return the single alignment group from parsed alignment JSON.
+
+    Version 0.4 of the alignment format wraps groups in a top-level
+    object with "format", "version" and "groups". Version 0.3 also
+    allowed a bare group, and published data is still written that way,
+    so both forms are read.
+
+    Raises ValueError if the file holds more than one group, which
+    cannot be read as a single alignment set.
+    """
+    if "groups" not in agroupdict:
+        return agroupdict
+    groups = agroupdict["groups"]
+    if len(groups) != 1:
+        raise ValueError(
+            f"Expected a single alignment group, found {len(groups)}:"
+            " reading multi-group files is not supported."
+        )
+    return dict(groups[0])
 
 
 def bad_reason(
@@ -171,6 +201,7 @@ class AlignmentsReader:
                     f"{self.alignmentset.alignmentpath} should contain an object, not a list. Perhaps not converted to Burrito"
                     " format yet?"
                 )
+            agroupdict = unwrap_group(agroupdict)
             meta: Metadata = Metadata(**agroupdict["meta"])
             # assumes default TranslationType to match self.altype,
             # and one value for the whole group: true for GC data, not
@@ -321,15 +352,15 @@ def write_alignment_group(
 
     def _write_documents(out: TextIO, documents: tuple[Document, Document]) -> None:
         """Write documents tuple to out."""
-        out.write(' "documents": [\n')
+        out.write('   "documents": [\n')
         out.write("    " + json.dumps(documents[0].asdict(), ensure_ascii=False) + ",\n")
         out.write("    " + json.dumps(documents[1].asdict(), ensure_ascii=False) + "\n")
-        out.write(" ],\n")
+        out.write("   ],\n")
 
     def _write_meta(out: TextIO, meta: Metadata) -> None:
         """Write metadata to out."""
         metarow = '"meta": ' + json.dumps(meta.asdict(), ensure_ascii=False)
-        f.write(f" {metarow},\n")
+        f.write(f"   {metarow},\n")
 
     def _record_dict(arec: AlignmentRecord, bcv_counters: dict[str, int]) -> dict[str, Any]:
         """Return the serialized dict for arec with a sequential BCV-based id.
@@ -344,16 +375,21 @@ def write_alignment_group(
         return recdict
 
     f.write("{\n")
+    f.write(f' "format": "{ALIGNMENT_FORMAT}",\n')
+    f.write(f' "version": "{ALIGNMENT_VERSION}",\n')
+    f.write(' "groups": [\n')
+    f.write("  {\n")
     _write_documents(f, group.documents)
     _write_meta(f, group.meta)
-    f.write(f' "roles": {json.dumps(group.roles, ensure_ascii=False)},\n')
-    f.write(f' "type": "{group._type}",\n "records": [\n ')
+    f.write(f'   "roles": {json.dumps(group.roles, ensure_ascii=False)},\n')
+    f.write(f'   "type": "{group._type}",\n   "records": [\n    ')
     # should sort the records: NIV11 doesn't appear to be sorted
     bcv_counters: dict[str, int] = {}
     records = sorted(group.records)
     for arec in records[:-1]:
         json.dump(_record_dict(arec, bcv_counters), f, ensure_ascii=False)
-        f.write(",\n ")
+        f.write(",\n    ")
     # now the last one without a comma, because JSON
     json.dump(_record_dict(group.records[-1], bcv_counters), f, ensure_ascii=False)
-    f.write("\n ]}")
+    # close records, then the group, then groups, then the top level
+    f.write("\n   ]\n  }\n ]\n}")
