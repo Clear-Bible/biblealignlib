@@ -16,7 +16,7 @@ from .AlignmentSet import AlignmentSet
 
 # probably don't need the other types
 from .AlignmentType import TranslationType
-from .alignments import AlignmentsReader, write_alignment_group
+from .alignments import AlignmentsReader, unwrap_group, write_alignment_group
 from .manager import Manager, VerseData
 from .BaseToken import BaseToken, asbool, bare_id, strip_tokenstr
 from .DiffRecord import DiffReason, DiffRecord
@@ -48,6 +48,7 @@ __all__ = [
     "DiffRecord",
     # alignments
     "AlignmentsReader",
+    "unwrap_group",
     "write_alignment_group",
     # manager
     "Manager",

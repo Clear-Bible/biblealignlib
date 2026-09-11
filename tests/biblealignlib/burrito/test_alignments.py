@@ -2,7 +2,13 @@
 
 import pytest
 
-from biblealignlib.burrito import CLEARROOT, AlignmentSet, AlignmentsReader, AlignmentRecord
+from biblealignlib.burrito import (
+    CLEARROOT,
+    AlignmentSet,
+    AlignmentsReader,
+    AlignmentRecord,
+    unwrap_group,
+)
 
 # test internal version
 ENGLANGDATAPATH = CLEARROOT / "alignments-eng/data"
@@ -24,6 +30,30 @@ def sblgntbsb() -> AlignmentSet:
 def alreader(sblgntbsb: AlignmentSet) -> AlignmentsReader:
     """Return a AlignmentsReader instance."""
     return AlignmentsReader(sblgntbsb)
+
+
+class TestUnwrapGroup:
+    """Test unwrap_group()."""
+
+    def test_enveloped(self) -> None:
+        """Test that a 0.4 file's group is read from inside "groups"."""
+        data = {"format": "alignment", "version": "0.4", "groups": [{"type": "translation"}]}
+        assert unwrap_group(data) == {"type": "translation"}
+
+    def test_bare_group(self) -> None:
+        """Test that a bare group is still read.
+
+        Version 0.3 allowed a group-less top level, and published data
+        is still written that way.
+        """
+        data = {"type": "translation", "records": []}
+        assert unwrap_group(data) == data
+
+    def test_multiple_groups_raises(self) -> None:
+        """Test that several groups cannot be read as a single alignment set."""
+        data = {"format": "alignment", "version": "0.4", "groups": [{}, {}]}
+        with pytest.raises(ValueError):
+            unwrap_group(data)
 
 
 class TestAlignmentsReader:

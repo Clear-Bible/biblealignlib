@@ -2,8 +2,10 @@
 
 This defines AlignmentGroup and supporting dataclasses.
 
-This implements Scripture Burrito Alignment Standard, v 0.3,
-https://docs.google.com/document/d/1zR5gsrm3gIoNiHVBlWz5_BBw3N-Ew1-4M5rMsFrPzSw/.
+This implements the Scripture Burrito alignment format, version 0.4,
+https://github.com/bible-technology/alignment-spec, which is the format
+the Scripture Burrito alignment flavor refers to:
+https://docs.burrito.bible/en/develop/flavors/alignment_flavor.html.
 
 The information model allows some values at multiple levels due to
 'hoisting'. This opinionated code:
@@ -28,6 +30,19 @@ import biblealignlib as bal
 
 from .AlignmentType import TranslationType
 from .source import macula_prefixer, macula_unprefixer
+
+# The alignment format declaration written at the top of every file.
+# See https://github.com/bible-technology/alignment-spec. Version 0.4
+# removed the group-less top-level form that 0.3 allowed, so a single
+# group is still wrapped in "groups".
+ALIGNMENT_FORMAT: str = "alignment"
+ALIGNMENT_VERSION: str = "0.4"
+
+# Metadata fields that are read but never written. The alignment format
+# has no meta.conformsTo: the top-level "version" declares the version a
+# file conforms to, and two encodings of one fact drift apart. Existing
+# files carry it, so the attribute is kept for reading.
+UNSERIALIZED_META_FIELDS: frozenset[str] = frozenset({"conformsTo"})
 
 
 # hoisting means this can be defined at several different levels, so
@@ -176,8 +191,17 @@ class Metadata:
 
     # no hoist option here: the caller decides
     def asdict(self) -> dict[str, Any]:
-        """Return a dict of values for serialization."""
-        metadict = {f: fattr for f in sorted(self._fieldnames) if (fattr := getattr(self, f))}
+        """Return a dict of values for serialization.
+
+        Fields in UNSERIALIZED_META_FIELDS are omitted: they are read
+        from existing files but are not part of the alignment format.
+        """
+        metadict = {
+            f: fattr
+            for f in sorted(self._fieldnames)
+            if f not in UNSERIALIZED_META_FIELDS
+            if (fattr := getattr(self, f))
+        }
         return metadict
 
 
@@ -464,8 +488,8 @@ class TopLevelGroups:
 
     # one group for OT, one group for NT
     groups: tuple[AlignmentGroup, AlignmentGroup]
-    format: str = "alignment"
-    version: str = "0.3.1"
+    format: str = ALIGNMENT_FORMAT
+    version: str = ALIGNMENT_VERSION
     sourcedocids: tuple[str, str] | tuple[()] = ()
     targetdocid: str = ""
 
