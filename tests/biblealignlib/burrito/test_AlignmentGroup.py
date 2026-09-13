@@ -32,14 +32,14 @@ def recordmeta() -> Metadata:
 
 @pytest.fixture(scope="module")
 def document() -> Document:
-    """Return a Document instance with default scheme."""
-    return Document(docid="SBLGNT")
+    """Return a Document instance declaring its scheme, as published data does."""
+    return Document(docid="SBLGNT", scheme="BCVWP")
 
 
 @pytest.fixture(scope="module")
 def documentwlcm() -> Document:
-    """Return a Document instance with default scheme."""
-    return Document(docid="WLCM")
+    """Return a Document instance declaring its scheme, as published data does."""
+    return Document(docid="WLCM", scheme="BCVWP")
 
 
 @pytest.fixture(scope="module")
@@ -57,13 +57,13 @@ def reference_wlcm(documentwlcm: Document) -> AlignmentReference:
 @pytest.fixture(scope="module")
 def reference_bsb(document: Document) -> AlignmentReference:
     """Return a AlignmentReference instance for BSB."""
-    return AlignmentReference(document=Document(docid="BSB"), selectors=["410040030021"])
+    return AlignmentReference(document=Document(docid="BSB", scheme="BCVW"), selectors=["410040030021"])
 
 
 @pytest.fixture(scope="module")
 def reference_bsb_ot(document: Document) -> AlignmentReference:
     """Return a AlignmentReference instance for BSB."""
-    return AlignmentReference(document=Document(docid="BSB"), selectors=["010040030021"])
+    return AlignmentReference(document=Document(docid="BSB", scheme="BCVW"), selectors=["010040030021"])
 
 
 @pytest.fixture(scope="module")
@@ -92,7 +92,7 @@ def recordwlcm(
 def group(groupmeta: Metadata, record: AlignmentRecord) -> AlignmentGroup:
     """Return a AlignmentGroup instance."""
     return AlignmentGroup(
-        documents=(Document(docid="SBLGNT"), Document(docid="BSB")),
+        documents=(Document(docid="SBLGNT", scheme="BCVWP"), Document(docid="BSB", scheme="BCVW")),
         meta=groupmeta,
         records=[record],
         roles=("source", "target"),
@@ -104,7 +104,7 @@ def group(groupmeta: Metadata, record: AlignmentRecord) -> AlignmentGroup:
 def groupwlcm(groupmeta: Metadata, recordwlcm: AlignmentRecord) -> AlignmentGroup:
     """Return a AlignmentGroup instance."""
     return AlignmentGroup(
-        documents=(Document(docid="WLCM"), Document(docid="BSB")),
+        documents=(Document(docid="WLCM", scheme="BCVWP"), Document(docid="BSB", scheme="BCVW")),
         meta=groupmeta,
         records=[recordwlcm],
         roles=("source", "target"),
@@ -135,20 +135,37 @@ class TestDocument:
     def test_init(self, document: Document) -> None:
         """Test initialization."""
         assert document.docid == "SBLGNT"
-        # Group should downgrade this to BCVW but that's not here
         assert document.scheme == "BCVWP"
         assert document.sourceid.canon == "nt"
 
     def test_wlcm(self) -> None:
-        doc = Document(docid="WLCM")
+        doc = Document(docid="WLCM", scheme="BCVWP")
         assert doc.scheme == "BCVWP"
         assert doc.sourceid.canon == "ot"
 
     def test_bsb(self) -> None:
         doc = Document(docid="BSB")
-        # downgraded scheme
-        assert doc.scheme == "BCVW"
         assert doc.sourceid is None
+
+    def test_no_scheme_is_invented(self) -> None:
+        """Test that a Document with no declared scheme reports none.
+
+        The data source chooses the format of its identifiers; the
+        library does not. An undeclared scheme is empty, not a guess.
+        """
+        assert Document(docid="BSB").scheme == ""
+        assert Document(docid="SBLGNT").scheme == ""
+
+    def test_a_declared_scheme_is_left_alone(self) -> None:
+        """Test that a declared scheme survives, whatever the docid is.
+
+        The previous behaviour rewrote a scheme to BCVW whenever the
+        docid was not a recognised source, which made the library the
+        author of a fact belonging to the data.
+        """
+        assert Document(docid="BSB", scheme="BCVWP").scheme == "BCVWP"
+        assert Document(docid="SBLGNT", scheme="BCVW").scheme == "BCVW"
+        assert Document(docid="anything", scheme="macula-greek").scheme == "macula-greek"
 
 
 class TestReference:

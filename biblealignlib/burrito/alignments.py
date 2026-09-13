@@ -33,6 +33,20 @@ from .source import SourceReader, macula_unprefixer
 from .target import TargetReader
 
 
+def declared_schemes(agroupdict: dict[str, Any]) -> dict[str, str]:
+    """Return the identifier scheme each document declares, keyed by docid.
+
+    A document declaring no scheme is omitted rather than given a
+    default. The data source chooses the format of its identifiers, so an
+    absent declaration is reported as absent rather than guessed at.
+    """
+    return {
+        doc["docid"]: doc["scheme"]
+        for doc in agroupdict.get("documents", [])
+        if doc.get("docid") and doc.get("scheme")
+    }
+
+
 def bad_reason(
     arec: AlignmentRecord, sourceitems: SourceReader, targetitems: TargetReader
 ) -> Optional[BadRecord]:
@@ -78,7 +92,6 @@ class AlignmentsReader:
 
     """
 
-    scheme = "BCVWP"
     altype: TranslationType = TranslationType()
 
     def __init__(
@@ -96,9 +109,11 @@ class AlignmentsReader:
         self.keepbadrecords: bool = keepbadrecords
         # the configuration of alignment data
         self.alignmentset = alignmentset
-        # Document instances for AlignmentGroup
-        self.sourcedoc: Document = Document(docid=self.alignmentset.sourceid, scheme=self.scheme)
-        self.targetdoc: Document = Document(docid=self.alignmentset.targetid, scheme=self.scheme)
+        # Document instances for AlignmentGroup. Schemes are left
+        # undeclared here and filled from the file, which is where the
+        # data source states them.
+        self.sourcedoc: Document = Document(docid=self.alignmentset.sourceid)
+        self.targetdoc: Document = Document(docid=self.alignmentset.targetid)
         # Read the data and instantiate an AlignmentGroup (with
         # AlignmentRecords, etc. all the way down)
         # dict of records where status = rejected
@@ -171,6 +186,12 @@ class AlignmentsReader:
                     f"{self.alignmentset.alignmentpath} should contain an object, not a list. Perhaps not converted to Burrito"
                     " format yet?"
                 )
+            # take each document's scheme from the file: the data source
+            # declares it, and the library does not invent one
+            schemes = declared_schemes(agroupdict)
+            for doc in (self.sourcedoc, self.targetdoc):
+                if scheme := schemes.get(doc.docid, ""):
+                    doc.scheme = scheme
             meta: Metadata = Metadata(**agroupdict["meta"])
             # assumes default TranslationType to match self.altype,
             # and one value for the whole group: true for GC data, not

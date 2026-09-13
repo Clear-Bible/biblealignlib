@@ -42,7 +42,10 @@ class Document:
     # - for target documents: a Version Abbreviation value from
     #   digitalbiblelibrary.org is a good choice.
     docid: str
-    scheme: str = "BCVWP"
+    # The identifier scheme the data source uses. The source chooses the
+    # format of its identifiers, so the library never supplies one: empty
+    # means undeclared, which is a different thing from a known default.
+    scheme: str = ""
     # only set if a source ID
     sourceid: Optional[bal.SourceidEnum] = None
 
@@ -53,9 +56,6 @@ class Document:
             self.sourceid = bal.SourceidEnum(self.docid)
         except ValueError:
             self.sourceid = None
-            # downgrade BCVWP to BCVW: no subword indices if not source
-            if self.scheme == "BCVWP":
-                self.scheme = "BCVW"
 
     def asdict(self) -> dict[str, Any]:
         """Return a dict of values suitable for serialization."""
