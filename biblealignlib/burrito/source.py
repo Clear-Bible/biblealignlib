@@ -308,6 +308,24 @@ class SourceReader(UserDict):
         self._book_tokens_cache: dict[str, list[str]] = {}
         self._book_verse_counts_cache: dict[str, int] = {}
 
+    def __missing__(self, key: str) -> "Source":
+        """Return the token for a prefixed identifier, which is stored bare.
+
+        Tokens are keyed without a canon prefix, but a data source may
+        publish its identifiers with one. Resolving both here means
+        nothing else has to reshape an identifier in order to look it
+        up - and so nothing has to hand back a reshaped one.
+        """
+        if key[:1].isalpha() and (bare := key[1:]) in self.data:
+            return self.data[bare]
+        raise KeyError(key)
+
+    def __contains__(self, key: object) -> bool:
+        """True if key names a token, with or without a canon prefix."""
+        if key in self.data:
+            return True
+        return isinstance(key, str) and key[:1].isalpha() and key[1:] in self.data
+
     def vocabulary(self, tokenattr: str = "text", lower: bool = False) -> list[str]:
         """Return the sorted set of attribute values for tokens.
 

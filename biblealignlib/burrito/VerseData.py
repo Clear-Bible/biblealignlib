@@ -34,7 +34,7 @@ from typing import Optional
 import pandas as pd
 
 
-from .BaseToken import BaseToken
+from .BaseToken import BaseToken, bare_id
 from .source import Source
 from .target import Target
 from .AlignmentGroup import AlignmentRecord
@@ -163,11 +163,13 @@ class VerseData:
         defaults to the length of the source token string (no padding).
         The source column is left-justified within that width.
         """
+        # selectors carry whatever identifier the data source published:
+        # normalize only to look a token up, never to store or write one
         source_tokenstring: str = ", ".join(
-            [self.sourceitems[sel].tokenstr for sel in alrec.source_selectors]
+            [self.sourceitems[bare_id(sel)].tokenstr for sel in alrec.source_selectors]
         )
         target_tokenstring: str = ", ".join(
-            [self.targetitems[sel].tokenstr for sel in alrec.target_selectors]
+            [self.targetitems[bare_id(sel)].tokenstr for sel in alrec.target_selectors]
         )
         width = srcwidth if srcwidth is not None else len(source_tokenstring)
         print(f"{alrec.meta.id}: {source_tokenstring:<{width}} --- {target_tokenstring}")
@@ -177,7 +179,9 @@ class VerseData:
         if not self.records:
             return
         srcwidth: int = max(
-            len(", ".join(self.sourceitems[sel].tokenstr for sel in alrec.source_selectors))
+            len(
+                ", ".join(self.sourceitems[bare_id(sel)].tokenstr for sel in alrec.source_selectors)
+            )
             for alrec in self.records
         )
         for alrec in self.records:

@@ -37,6 +37,7 @@ from warnings import warn
 
 from .AlignmentGroup import AlignmentGroup, AlignmentRecord
 from .AlignmentSet import AlignmentSet
+from .BaseToken import bare_id
 from .VerseData import VerseData
 from .alignments import AlignmentsReader
 from .source import Source, SourceReader
@@ -76,6 +77,8 @@ class Manager(UserDict):
         keeptargetwordpart: bool = False,
         # if True, don't remove bad records
         keepbadrecords: bool = False,
+        # if True, carry selectors through exactly as the file holds them
+        preserve_identifiers: bool = False,
     ) -> None:
         """Initialize a Manager instance for an AlignmentSet.
 
@@ -83,9 +86,14 @@ class Manager(UserDict):
         representing the part index for a target token
         ID. keeptargetwordpart does not affect source token identifiers.
 
+        With preserve_identifiers = True, selectors are carried through
+        exactly as the file holds them rather than normalized to the hub
+        format. See AlignmentsReader for why that matters.
+
         """
         super().__init__()
-        self.keeptargetwordpart: bool = keeptargetwordpart
+        self.preserve_identifiers: bool = preserve_identifiers
+        self.keeptargetwordpart: bool = keeptargetwordpart or preserve_identifiers
         self.keepbadrecords: bool = keepbadrecords
         # the configuration of alignment data
         self.alignmentset: AlignmentSet = alignmentset
@@ -112,6 +120,7 @@ class Manager(UserDict):
             alignmentset=alignmentset,
             keeptargetwordpart=self.keeptargetwordpart,
             keepbadrecords=self.keepbadrecords,
+            preserve_identifiers=self.preserve_identifiers,
         )
         self.alignmentsreader.clean_alignments(self.sourceitems, self.targetitems)
         self.alignmentgroup: AlignmentGroup = self.alignmentsreader.alignmentgroup
@@ -255,7 +264,9 @@ class Manager(UserDict):
         token_records = [
             rec
             for rec in self.alignmentsreader.alignmentgroup.records
-            if selectorset.intersection(getattr(rec, selectorattr))
+            # selectors keep the identifier the data source published;
+            # normalize only for this comparison
+            if selectorset.intersection(bare_id(sel) for sel in getattr(rec, selectorattr))
         ]
         return token_records
 

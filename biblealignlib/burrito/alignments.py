@@ -89,10 +89,29 @@ class AlignmentsReader:
         keepbadrecords: bool = False,
         # if True, keep rejected records
         keeprejected: bool = False,
+        # if True, carry selectors through exactly as the file holds
+        # them, rather than normalizing them to the hub format
+        preserve_identifiers: bool = False,
     ) -> None:
-        """Initialize a Reader instance."""
+        """Initialize a Reader instance.
+
+        By default selectors are normalized to the hub format: a canon
+        prefix is dropped from source selectors and a 12-character
+        target selector is truncated to 11. That is what existing
+        callers expect, so it remains the default.
+
+        With preserve_identifiers=True, selectors are carried through
+        exactly as the file holds them, so what is read is what is
+        written. Use it when the output is published for others to
+        resolve against the texts it points into: identifiers belong to
+        whoever created that data, and a reshaped one does not resolve
+        in the environment it came from.
+
+        """
         self.alignmentset: AlignmentSet = alignmentset
-        self.keeptargetwordpart: bool = keeptargetwordpart
+        self.preserve_identifiers: bool = preserve_identifiers
+        # preserving identifiers means leaving the target word part alone too
+        self.keeptargetwordpart: bool = keeptargetwordpart or preserve_identifiers
         self.keepbadrecords: bool = keepbadrecords
         # the configuration of alignment data
         self.alignmentset = alignmentset
@@ -144,8 +163,12 @@ class AlignmentsReader:
             print(
                 f"No source selectors for {alrec['meta']['id']}: dropping the record, adding to self.badrecords."
             )
-        else:
-            # convert Macula IDs to token IDs (no prefix)
+        elif not self.preserve_identifiers:
+            # hub format: drop the canon prefix. With
+            # preserve_identifiers the selector is carried through as the
+            # file holds it, because a reshaped identifier no longer
+            # resolves against the text it points into. Token lookups
+            # accept either form, so nothing downstream needs the strip.
             alrec["source"] = [macula_unprefixer(src) for src in alrec["source"]]
         sourceref: AlignmentReference = AlignmentReference(
             document=self.sourcedoc, selectors=alrec["source"]

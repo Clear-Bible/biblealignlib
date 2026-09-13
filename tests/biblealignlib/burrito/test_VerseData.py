@@ -6,7 +6,15 @@ Largely from Claude.
 import pytest
 import pandas as pd
 
-from biblealignlib.burrito import CLEARROOT, AlignmentSet, Manager, VerseData, Source, Target
+from biblealignlib.burrito import (
+    CLEARROOT,
+    AlignmentSet,
+    Manager,
+    VerseData,
+    Source,
+    Target,
+    bare_id,
+)
 from biblealignlib.burrito.DiffRecord import DiffReason, DiffRecord
 
 # test published version
@@ -327,7 +335,7 @@ class TestVerseData:
         vd.display_record(alrec)
         captured = capsys.readouterr()
         for sel in alrec.source_selectors:
-            assert vd.sourceitems[sel].tokenstr in captured.out
+            assert vd.sourceitems[bare_id(sel)].tokenstr in captured.out
 
     def test_display_record_contains_target_tokenstrings(self, mgr: Manager, capsys) -> None:
         """display_record output contains the tokenstr of each target token."""
@@ -344,7 +352,9 @@ class TestVerseData:
         alrec = vd.records[0]
         vd.display_record(alrec)
         captured = capsys.readouterr()
-        source_str = ", ".join(vd.sourceitems[sel].tokenstr for sel in alrec.source_selectors)
+        source_str = ", ".join(
+            vd.sourceitems[bare_id(sel)].tokenstr for sel in alrec.source_selectors
+        )
         target_str = ", ".join(vd.targetitems[sel].tokenstr for sel in alrec.target_selectors)
         expected = f"{alrec.meta.id}: {source_str} --- {target_str}\n"
         assert captured.out == expected
@@ -353,7 +363,9 @@ class TestVerseData:
         """display_record with srcwidth wider than source pads with spaces."""
         vd: VerseData = mgr["41004003"]
         alrec = vd.records[0]
-        source_str = ", ".join(vd.sourceitems[sel].tokenstr for sel in alrec.source_selectors)
+        source_str = ", ".join(
+            vd.sourceitems[bare_id(sel)].tokenstr for sel in alrec.source_selectors
+        )
         wide = len(source_str) + 10
         vd.display_record(alrec, srcwidth=wide)
         captured = capsys.readouterr()
@@ -363,7 +375,9 @@ class TestVerseData:
         """display_record with srcwidth narrower than source does not truncate."""
         vd: VerseData = mgr["41004003"]
         alrec = vd.records[0]
-        source_str = ", ".join(vd.sourceitems[sel].tokenstr for sel in alrec.source_selectors)
+        source_str = ", ".join(
+            vd.sourceitems[bare_id(sel)].tokenstr for sel in alrec.source_selectors
+        )
         vd.display_record(alrec, srcwidth=1)
         captured = capsys.readouterr()
         assert source_str in captured.out
