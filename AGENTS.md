@@ -326,7 +326,6 @@ class TestManager:
 
 ### Code Style
 - Black formatting (line length 100)
-- isort for imports
 - Docstrings on all public functions (triple-quoted)
 - Use dataclasses for data models, avoid manual __init__
 
@@ -360,7 +359,7 @@ Core dependencies (from pyproject.toml):
 
 Optional/External:
 - **eflomal**: Word alignment algorithm (requires special build on macOS)
-- Poetry for dependency management
+- uv for dependency and environment management
 
 ## Common Operations
 
@@ -448,27 +447,27 @@ alignment_group = pr.make_burrito()
 ### Testing with pytest
 ```bash
 # Run all tests
-pytest tests/
+uv run pytest tests/
 
 # Run specific test file
-pytest tests/biblealignlib/burrito/test_manager.py
+uv run pytest tests/biblealignlib/burrito/test_manager.py
 
 # Run with verbose output
-pytest -v tests/
+uv run pytest -v tests/
 
 # Run with coverage
-pytest --cov=biblealignlib tests/
+uv run pytest --cov=biblealignlib tests/
 ```
 
 ### Type Checking
 ```bash
-mypy
+uv run mypy
 ```
 
 ### Code Formatting
 ```bash
-black .
-isort .
+uv run black .
+uv run isort .
 ```
 
 ### Known Limitations
