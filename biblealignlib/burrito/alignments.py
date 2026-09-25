@@ -355,5 +355,5 @@ def write_alignment_group(
         json.dump(_record_dict(arec, bcv_counters), f, ensure_ascii=False)
         f.write(",\n ")
     # now the last one without a comma, because JSON
-    json.dump(_record_dict(group.records[-1], bcv_counters), f, ensure_ascii=False)
+    json.dump(_record_dict(records[-1], bcv_counters), f, ensure_ascii=False)
     f.write("\n ]}")
