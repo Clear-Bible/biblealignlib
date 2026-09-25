@@ -11,7 +11,7 @@
 
 Command line example:
 # cd alignments-eng/data/targets/eng/BSB
-$ poetry run python -m biblealignlib.util.canonsplit BSB_english_20240610.tsv ot_BSB-20240610.tsv nt_BSB-20240610.tsv
+$ uv run python -m biblealignlib.util.canonsplit BSB_english_20240610.tsv ot_BSB-20240610.tsv nt_BSB-20240610.tsv
 
 """
 

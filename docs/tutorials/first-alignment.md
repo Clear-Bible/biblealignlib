@@ -15,10 +15,10 @@ This tutorial walks you through loading alignment data and exploring it verse by
 pip install biblealignlib
 ```
 
-Or with Poetry:
+Or with uv:
 
 ```bash
-poetry add biblealignlib
+uv add biblealignlib
 ```
 
 ---
