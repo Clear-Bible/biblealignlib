@@ -1,73 +1,70 @@
-[tool.poetry]
-name = "biblealignlib"
-version = "0.4.0"
-description = "Code for managing Word-level alignments for Bibles, including both automatic alignments and manually corrected alignments."
-authors = ["Sean Boisen <sean.boisen@biblica.com>"]
-license = "MIT"
-readme = "README.md"
-keywords = ["Bible", "alignment", "Bible alignment"]
-repository = "https://github.com/Clear-Bible/biblealignlib"
-#documentation = "https://sboisen.github.io/biblealignlib"
-packages = [
-  {include = "biblealignlib"},
-]
-# need more here
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Operating System :: OS Independent",
-    "Intended Audience :: Religion",
-    "License :: OSI Approved :: MIT License",
-    "Topic :: Religion",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-]
-
-[tool.poetry.dependencies]
-python = ">=3.10,<4.0"
-unicodecsv = "^0.14.1"
-jupyterlab = "^4.3.3"
-pandas = "^2.2.3"
-regex = "^2024.11.6"
-# eflomal = {url = "https://github.com/jacobwegner/eflomal/archive/9a2f4a789b4abdaf5b572aa98766efeb13c65ba8.zip", optional = true}
-python-dotenv = "^1.0.1"
-jupyter-server-ydoc = "^1.1.0"
-altair = "^5.5.0"
-jupyter-ai = "^2.31.6"
-langchain-openai = "^0.3.33"
-biblelib = "^0.5.3"
-
-
-[tool.poetry.group.dev.dependencies]
-black = "^24.10.0"
-pytest = "^8.0"
-pytest-cov = "^4.0.0"
-mypy = "^1.0"
-pre-commit = "^4.0"
-tox = "^4.0"
-diff-match-patch = "^20241021"
-
-[tool.poetry.group.docs.dependencies]
-mkdocs = "^1.6"
-mkdocs-material = "^9.6"
-mkdocstrings = {extras = ["python"], version = "^0.27.0"}
-
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "biblealignlib"
+version = "0.4.1"
+description = "Code for managing Word-level alignments for Bibles, including both automatic alignments and manually corrected alignments."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = "MIT"
+keywords = ["Bible", "alignment", "Bible alignment"]
+authors = [
+  {name = "Sean Boisen", email = "sean.boisen@biblica.com"},
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Religion",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Religion",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "altair>=5.5.0,<6.0.0",
+  "biblelib>=0.5.3,<0.6.0",
+  "jupyterlab>=4.3.3,<5.0.0",
+  "pandas>=3.0.3,<4.0.0",
+  "python-dotenv>=1.0.1,<2.0.0",
+  "regex>=2024.11.6,<2025.0.0",
+  "unicodecsv>=0.14.1,<0.15.0",
+]
+
+[project.urls]
+Repository = "https://github.com/Clear-Bible/biblealignlib"
+
+[dependency-groups]
+dev = [
+  "black>=24.10.0,<25.0.0",
+  "diff-match-patch>=20241021",
+  "mypy>=1.0,<2.0.0",
+  "pre-commit>=4.0,<5.0.0",
+  "pytest>=8.0,<9.0.0",
+  "pytest-cov>=4.0.0,<5.0.0",
+]
+docs = [
+  "mkdocs>=1.6,<2.0.0",
+  "mkdocs-material>=9.6,<10.0.0",
+  "mkdocstrings[python]>=0.27.0,<1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["biblealignlib"]
 
 [tool.black]
 line-length = 100
-target-version = ['py310', 'py311', 'py312', 'py313']
+target-version = ['py311', 'py312', 'py313']
 preview = true
 
 [tool.isort]
 profile = "black"
 
 [tool.mypy]
-files = ["src"]
+files = ["biblealignlib"]
 # check_untyped_defs = "True"
 # disallow_any_unimported = "True"
 disallow_untyped_defs = "True"
@@ -83,4 +80,3 @@ skip_empty = true
 [tool.coverage.run]
 branch = true
 source = ["biblealignlib"]
-
