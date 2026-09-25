@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "biblealignlib"
-version = "0.4.1"
+version = "0.4.2"
 description = "Code for managing Word-level alignments for Bibles, including both automatic alignments and manually corrected alignments."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"

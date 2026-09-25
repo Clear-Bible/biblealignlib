@@ -1,5 +1,28 @@
 # Release Notes
 
+## 0.4.2
+
+* Bug fix in `burrito.alignments.write_alignment_group()`: the final
+  record was taken from the unsorted `group.records` rather than the
+  sorted list, so it could be duplicated or dropped in the output.
+* Bug fix in `util.DiffTargets.Serialize`: nested double quotes in an
+  f-string caused a syntax error on Python < 3.12.
+
+## 0.4.1
+
+* Converted project management from Poetry to
+  [uv](https://docs.astral.sh/uv/): `pyproject.toml` now uses standard
+  `[project]` metadata with a `hatchling` build backend, `poetry.lock`
+  is replaced by `uv.lock`, and dev/docs dependencies are `uv`
+  dependency groups. Removed `tox.ini`.
+* Dropped support for Python 3.10: now requires Python 3.11–3.13.
+* Upgraded pandas to >= 3.0.
+* Dropped unneeded dependencies: `jupyter-ai`, `langchain-openai`,
+  `jupyter-server-ydoc`, and `tox`.
+* Fixed mypy configuration to check `biblealignlib` (was `src`).
+* Updated docs, tutorials, and docstrings to use `uv` commands instead
+  of `poetry`.
+
 ## 0.4
 
 * Added support for "tokenstr" representation like
