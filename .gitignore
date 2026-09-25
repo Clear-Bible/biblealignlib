@@ -27,3 +27,4 @@ site/
 .ipynb_checkpoints/
 .pytest_cache/
 .env
+.venv/
