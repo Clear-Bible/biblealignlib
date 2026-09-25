@@ -830,7 +830,7 @@ class Serialize:
                             sel: niv84_bcv_tokenstrs.get(sel, "<unknown>")
                             for sel in alrec.target_selectors
                         }
-                        f.write(f"{bcv}\t{" ".join(niv84_str.values())}\n")
+                        f.write(f"{bcv}\t{' '.join(niv84_str.values())}\n")
 
     def write_diffs(self, outpath: Path = None) -> None:
         """Write diffs as a checklist for manual alignment."""
